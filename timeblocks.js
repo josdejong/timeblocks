@@ -252,38 +252,12 @@ function BlockGraph (body, options) {
     yMax: null
   };
 
+  // the _update method is called when anything in the DataSets changes
   var me = this;
   this._update = function () {
     me._updateMinMax();
     me.body.emitter.emit('requestRedraw');
   };
-  //
-  // // listeners for the DataSet of the items
-  // var me = this;
-  // this.itemListeners = {
-  //   'add': function (event, params, senderId) {
-  //     me._update();
-  //   },
-  //   'update': function (event, params, senderId) {
-  //     me._update();
-  //   },
-  //   'remove': function (event, params, senderId) {
-  //     me._update();
-  //   }
-  // };
-  //
-  // // listeners for the DataSet of the groups
-  // this.labelListeners = {
-  //   'add': function (event, params, senderId) {
-  //     me._update();
-  //   },
-  //   'update': function (event, params, senderId) {
-  //     me._update();
-  //   },
-  //   'remove': function (event, params, senderId) {
-  //     me._update();
-  //   }
-  // };
 
   this.itemsData = null;
   this.labelsData = null;

@@ -1,0 +1,81 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>TimeBlocks | Much data</title>
+
+  <style type="text/css">
+    body, html {
+      font-family: sans-serif;
+    }
+
+    #visualization {
+      height: 800px;
+    }
+  </style>
+
+  <!-- load vis.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.css" rel="stylesheet" type="text/css" />
+
+  <!-- load timeblocks -->
+  <script src="../timeblocks.js"></script>
+  <link href="../timeblocks.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+
+<p>
+  See performance with larger amounts of data (1000 items)
+</p>
+
+<div id="visualization"></div>
+
+<script type="text/javascript">
+  // DOM element where the Timeblocks will be attached
+  var container = document.getElementById('visualization');
+
+  var COUNT = 1000;
+  var date = vis.moment();
+
+  // Create a DataSet (allows two way data-binding)
+  var items = new vis.DataSet();
+  for (var i = 0; i < COUNT; i++) {
+    date.add(Math.random() * 2, 'days');
+    var yMin = Math.round(Math.random() * 20);
+    items.add({
+      id: i,
+      yMin: yMin,
+      yMax: yMin + Math.round(Math.random() * 5),
+      content: 'item ' + i,
+      title: 'item ' + i,
+      start: date.clone(),
+      end: date.clone().add(Math.random() * 4, 'days')
+    })
+  }
+
+  var labels = new vis.DataSet([
+    {
+      id: 1,
+      yMin: 4,
+      yMax: 11,
+      content: 'Some label',
+      title: 'Some label'
+    },
+    {
+      id: 2,
+      yMin: 12,
+      yMax: 14,
+      content: 'Another label',
+      title: 'Another label'
+    }
+  ]);
+
+  // Configuration for the TimeBlocks
+  var options = {
+    height: '100%'
+  };
+
+  // Create a TimeBlocks
+  var timeblocks = new TimeBlocks(container, items, labels, options);
+</script>
+</body>
+</html>
