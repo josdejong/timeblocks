@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Timeblocks - Angular.js example</title>
+
+  <!-- load angular.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.8/angular.js"></script>
+
+  <!-- load vis.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.css" rel="stylesheet" type="text/css" />
+
+  <!-- load timeblocks and it's angular.js directive-->
+  <script src="../timeblocks.js"></script>
+  <script src="../angular-timeblocks.js"></script>
+  <link href="../timeblocks.css" rel="stylesheet" type="text/css" />
+
+  <style>
+    .timeblocks-container {
+      height: 400px;
+    }
+  </style>
+</head>
+<body ng-app="exampleApp">
+<div ng-controller="Example as example">
+  <p>TimeBlocks angular.js example</p>
+  <p>
+    <button ng-click="example.update()">Update</button>
+  </p>
+  <div class="timeblocks-container">
+    <vis-timeblocks data="example.data" options="example.options" />
+
+  </div>
+</div>
+
+<script>
+  var app = angular.module('exampleApp', ['ngTimeBlocks']);
+
+  app.controller('Example', function() {
+
+    var items = new vis.DataSet([
+      {
+        id: 1,
+        yMin: 2,
+        yMax: 4,
+        content: 'item 1 (2-4)',
+        title: 'item 1 (2-4)',
+        start: '2016-04-16',
+        end: '2016-04-19'
+      },
+      {
+        id: 2,
+        yMin: 8,
+        yMax: 11,
+        content: 'item 2 (8-11)',
+        title: 'item 2 (8-11)',
+        start: '2016-04-22',
+        end: '2016-04-28'
+      },
+      {
+        id: 3,
+        yMin: 4,
+        yMax: 7,
+        content: 'item 3 (4-7)',
+        title: 'item 3 (4-7)',
+        start: '2016-04-18',
+        end: '2016-04-28'
+      },
+      {
+        id: 4,
+        yMin: 0,
+        yMax: 16,
+        content: 'item 4 (0-16)',
+        title: 'item 4 (0-16)',
+        start: '2016-04-29',
+        end: '2016-05-02'
+      }
+    ]);
+
+    var labels = new vis.DataSet([
+      {
+        id: 1,
+        yMin: 4,
+        yMax: 11,
+        content: 'Some label',
+        title: 'Some label'
+      },
+      {
+        id: 2,
+        yMin: 12,
+        yMax: 14,
+        content: 'Another label',
+        title: 'Another label'
+      }
+    ]);
+
+    this.data = {
+      items: items,
+      labels: labels,
+    };
+
+    this.options = {
+      height: '100%'
+    };
+
+    this.update = function () {
+      items.update({ id: 1, content: 'Updated...' });
+      labels.update({ id: 1, content: 'Updated...' });
+    }
+
+  });
+</script>
+</body>
+</html>

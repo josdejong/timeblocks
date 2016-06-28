@@ -110,7 +110,7 @@ function TimeBlocks (container, items, labels, options) {
   };
 
   this.on('requestRedraw', function () {
-    me.redraw();
+    me._redraw();
   });
 
   // apply options
@@ -180,6 +180,9 @@ TimeBlocks.prototype.setItems = function(items) {
       this.fit({animation: false});
     }
   }
+  else {
+    // TODO: redraw when needed
+  }
 };
 
 /**
@@ -202,6 +205,8 @@ TimeBlocks.prototype.setLabels = function(labels) {
 
   this.labelsData = newDataSet;
   this.blockGraph.setLabels(this.labelsData);
+
+  // TODO: redraw when needed
 };
 
 /**
