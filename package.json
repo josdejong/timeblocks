@@ -1,0 +1,24 @@
+{
+  "name": "timeblocks",
+  "version": "0.0.1",
+  "description": "timeblocks extension for vis.js",
+  "main": "timeblocks.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/josdejong/timeblocks.git"
+  },
+  "keywords": [
+    "timeline",
+    "timeblocks",
+    "vis.js"
+  ],
+  "author": "Jos de Jong",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/josdejong/timeblocks/issues"
+  },
+  "homepage": "https://github.com/josdejong/timeblocks#readme"
+}

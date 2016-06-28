@@ -1,0 +1,56 @@
+.timeblocks-grid-value {
+  padding: 0 5px;
+  background: white;
+  color: #4d4d4d;
+}
+
+.timeblocks-grid-line {
+  border-top: 1px solid lightgray;
+}
+
+.timeblocks-vertical-axis {
+}
+
+.timeblocks-item {
+  display: block;
+  background: #e5e5e5;
+  border: 1px solid #d5d5d5;
+  padding: 5px;
+  text-align: center;
+  overflow: hidden;
+  box-shadow: 0 0 3px 1px rgba(0,0,0, 0.1)
+}
+
+.timeblocks-labels {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 42px;
+  height: 100%;
+}
+
+.timeblocks-label {
+  position: relative;
+  box-sizing: border-box;
+  display: inline-block;
+  left: 5px;
+  width: 32px;
+  background: white;
+  border: 1px solid #d5d5d5;
+  padding: 0;
+  overflow: hidden;
+}
+
+.timeblocks-label .timeblocks-contents {
+  transform: rotate(-90deg);
+  display: inline-block;
+  padding: 5px;
+
+  white-space: nowrap;
+}
+
+.timeblocks-label .timeblocks-contents:after {
+  content: "";
+  float: left;
+  margin-top: 100%;
+}
