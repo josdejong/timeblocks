@@ -396,7 +396,7 @@ BlockGraph.prototype._redrawAxis = function () {
 
     var value = document.createElement('div');
     value.className = 'timeblocks-grid-value ' + (line.major ? 'vis-major' : 'vis-minor');
-    value.appendChild(document.createTextNode(line.val));
+    value.appendChild(document.createTextNode(format(line.val)));
     value.style.top = (height - line.y - charHeight / 2 + 1) + 'px';
     value.style.right = '0';
     value.style.position = 'absolute';
@@ -623,3 +623,17 @@ BlockGraph.prototype._contentToHTML = function (content) {
     throw new Error('Property "content" missing');
   }
 };
+
+/**
+ * Format a number. Prevents displaying round off errors
+ * @param {number | string} number
+ * @return {string} Returns the formatted number
+ */
+function format (number) {
+  if (typeof number === 'string') {
+    return parseFloat(parseFloat(number).toPrecision(12)) + '';
+  }
+  else { // assume typeof number === 'number'
+    return parseFloat(number.toPrecision(12)) + '';
+  }
+}
