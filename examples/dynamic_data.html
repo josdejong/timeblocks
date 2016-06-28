@@ -1,0 +1,150 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>TimeBlocks | Test</title>
+
+  <style type="text/css">
+    body, html {
+      font-family: sans-serif;
+    }
+
+    #visualization {
+      height: 400px;
+    }
+  </style>
+
+  <!-- load vis.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.css" rel="stylesheet" type="text/css" />
+
+  <!-- load timeblocks -->
+  <script src="../timeblocks.js"></script>
+  <link href="../timeblocks.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+
+<p>
+  Insert, update and remove items on the fly.
+</p>
+
+<p>
+  <button id="insert-labels">Insert labels</button>
+  <button id="insert-items">Insert items</button>
+  <button id="update">Update data</button>
+  <button id="remove">Remove data</button>
+</p>
+
+<div id="visualization"></div>
+
+<script type="text/javascript">
+  // DOM element where the Timeblocks will be attached
+  var container = document.getElementById('visualization');
+
+  var items = new vis.DataSet();
+  var labels = new vis.DataSet();
+
+  // Configuration for the TimeBlocks
+  var options = {
+//    start: '2016-04-10',
+//    end: '2016-04-29',
+//    yMin: 0,
+//    yMax: 16,
+//    autoResize: false
+    height: '100%'
+  };
+
+  // Create a TimeBlocks
+  var timeblocks = new TimeBlocks(container, items, labels, options);
+
+  function insertLabels () {
+    labels.add([
+      {
+        id: 1,
+        yMin: 4,
+        yMax: 11,
+        content: 'Some label',
+        title: 'Some label'
+      },
+      {
+        id: 2,
+        yMin: 12,
+        yMax: 14,
+        content: 'Another label',
+        title: 'Another label'
+      }
+    ]);
+  }
+
+  function insertItems () {
+    items.add([
+      {
+        id: 1,
+        yMin: 2,
+        yMax: 4,
+        content: 'item 1 (2-4)',
+        title: 'item 1 (2-4)',
+        start: '2016-04-16',
+        end: '2016-04-19'
+      },
+      {
+        id: 2,
+        yMin: 8,
+        yMax: 11,
+        content: 'item 2 (8-11)',
+        title: 'item 2 (8-11)',
+        start: '2016-04-22',
+        end: '2016-04-28'
+      },
+      {
+        id: 3,
+        yMin: 4,
+        yMax: 7,
+        content: 'item 3 (4-7)',
+        title: 'item 3 (4-7)',
+        start: '2016-04-18',
+        end: '2016-04-28'
+      },
+      {
+        id: 4,
+        yMin: 0,
+        yMax: 16,
+        content: 'item 4 (0-16)',
+        title: 'item 4 (0-16)',
+        start: '2016-04-29',
+        end: '2016-05-02'
+      }
+    ]);
+
+    timeblocks.fit({animation: false});
+  }
+
+  function removeData() {
+    items.clear();
+    labels.clear();
+  }
+
+  function updateData () {
+    var someItemId = items.getIds()[0];
+    if (someItemId !== undefined) {
+      items.update({
+        id: someItemId,
+        content: 'Updated...'
+      })
+    }
+
+    var someLabelId = labels.getIds()[0];
+    if (someLabelId !== undefined) {
+      labels.update({
+        id: someLabelId,
+        content: 'Updated...'
+      })
+    }
+  }
+
+  document.querySelector('#insert-items').onclick = insertItems;
+  document.querySelector('#insert-labels').onclick = insertLabels;
+  document.querySelector('#update').onclick = updateData;
+  document.querySelector('#remove').onclick = removeData;
+</script>
+</body>
+</html>

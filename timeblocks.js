@@ -109,6 +109,10 @@ function TimeBlocks (container, items, labels, options) {
     me.emit('contextmenu', me.getEventProperties(event))
   };
 
+  this.on('requestRedraw', function () {
+    me.redraw();
+  });
+
   // apply options
   if (options) {
     this.setOptions(options);
@@ -219,10 +223,6 @@ TimeBlocks.prototype.getEventProperties = function (event) {
 
 
 
-
-
-
-
 /*****************************    BlockGraph    *******************************/
 
 
@@ -247,42 +247,43 @@ function BlockGraph (body, options) {
     width: 0,
     valueWidth: 0,
     labelsWidth: null,
-    charHeight: 24
+    charHeight: 24,
+    yMin: null,
+    yMax: null
   };
 
-  // listeners for the DataSet of the items
-  // TODO: implement _onAdd, _onUpdate, _onRemove?
   var me = this;
-  this.itemListeners = {
-    'add': function (event, params, senderId) {
-      me.redraw();
-      // me._onAdd(params.items);
-    },
-    'update': function (event, params, senderId) {
-      me.redraw();
-      // me._onUpdate(params.items);
-    },
-    'remove': function (event, params, senderId) {
-      me.redraw();
-      // me._onRemove(params.items);
-    }
+  this._update = function () {
+    me._updateMinMax();
+    me.body.emitter.emit('requestRedraw');
   };
-
-  // listeners for the DataSet of the groups
-  this.labelListeners = {
-    'add': function (event, params, senderId) {
-      me.redraw();
-      // me._onAddGroups(params.items);
-    },
-    'update': function (event, params, senderId) {
-      me.redraw();
-      // me._onUpdateGroups(params.items);
-    },
-    'remove': function (event, params, senderId) {
-      me.redraw();
-      // me._onRemoveGroups(params.items);
-    }
-  };
+  //
+  // // listeners for the DataSet of the items
+  // var me = this;
+  // this.itemListeners = {
+  //   'add': function (event, params, senderId) {
+  //     me._update();
+  //   },
+  //   'update': function (event, params, senderId) {
+  //     me._update();
+  //   },
+  //   'remove': function (event, params, senderId) {
+  //     me._update();
+  //   }
+  // };
+  //
+  // // listeners for the DataSet of the groups
+  // this.labelListeners = {
+  //   'add': function (event, params, senderId) {
+  //     me._update();
+  //   },
+  //   'update': function (event, params, senderId) {
+  //     me._update();
+  //   },
+  //   'remove': function (event, params, senderId) {
+  //     me._update();
+  //   }
+  // };
 
   this.itemsData = null;
   this.labelsData = null;
@@ -299,26 +300,38 @@ BlockGraph.prototype.setOptions = function (options) {
 };
 
 BlockGraph.prototype._updateMinMax = function () {
-  if (this.options.yMin === null) {
+  if (this.options.yMin != null) {
+    this.props.yMin = this.options.yMin
+  }
+  else {
     var minItem = this.itemsData && this.itemsData.min('yMin');
-    // TODO: also reckon with this.labelsData
     if (minItem) {
       this.props.yMin = minItem.yMin;
     }
-  }
-  else {
-    this.props.yMin = this.options.yMin
+
+    var minLabel = this.labelsData && this.labelsData.min('yMin');
+    if (minLabel) {
+      this.props.yMin = this.props.yMin == null
+          ? minLabel.yMin
+          : Math.min(this.props.yMin, minLabel.yMin)
+    }
   }
 
-  if (this.options.yMax === null) {
+  if (this.options.yMax != null) {
+    this.props.yMax = this.options.yMax
+  }
+  else {
     var maxItem = this.itemsData && this.itemsData.max('yMax');
-    // TODO: also reckon with this.labelsData
     if (maxItem) {
       this.props.yMax = maxItem.yMax;
     }
-  }
-  else {
-    this.props.yMax = this.options.yMax
+
+    var maxLabel = this.labelsData && this.labelsData.max('yMax');
+    if (maxLabel) {
+      this.props.yMax = this.props.yMax == null
+          ? maxLabel.yMax
+          : Math.max(this.props.yMax, maxLabel.yMax)
+    }
   }
 };
 
@@ -332,7 +345,6 @@ BlockGraph.prototype._create = function () {
   this.dom.labelsContainer = document.createElement('div');
   this.dom.labelsContainer.className = 'timeblocks-labels';
 };
-
 
 BlockGraph.prototype.redraw = function () {
   var axisResized = this._redrawAxis();
@@ -512,8 +524,6 @@ BlockGraph.prototype._redrawItems = function () {
 
 
 BlockGraph.prototype.setItems = function (items) {
-  var me = this;
-  var ids;
   var oldItemsData = this.itemsData;
 
   // replace the dataset
@@ -529,33 +539,18 @@ BlockGraph.prototype.setItems = function (items) {
 
   if (oldItemsData) {
     // unsubscribe from old dataset
-    util.forEach(this.itemListeners, function (callback, event) {
-      oldItemsData.off(event, callback);
-    });
-
-    // remove all drawn items
-    // ids = oldItemsData.getIds();
-    // this._onRemove(ids); // TODO: do we need _onRemove?
+    oldItemsData.off('*', this._update);
   }
 
   if (this.itemsData) {
     // subscribe to new dataset
-    var id = this.id;
-    util.forEach(this.itemListeners, function (callback, event) {
-      me.itemsData.on(event, callback, id);
-    });
+    this.itemsData.on('*', this._update); // listen to the events add, update, remove
 
     this._updateMinMax();
-
-    // add all new items
-    // ids = this.itemsData.getIds();
-    //this._onAdd(ids); // TODO: do we need _onAdd?
   }
 };
 
 BlockGraph.prototype.setLabels = function (labels) {
-  var me = this;
-  var ids;
   var oldLabelsData = this.labelsData;
 
   // replace the dataset
@@ -571,27 +566,14 @@ BlockGraph.prototype.setLabels = function (labels) {
 
   if (oldLabelsData) {
     // unsubscribe from old dataset
-    util.forEach(this.itemListeners, function (callback, event) {
-      oldLabelsData.off(event, callback);
-    });
-
-    // remove all drawn labels
-    // ids = oldLabelsData.getIds();
-    // this._onRemove(ids); // TODO: do we need _onRemove?
+    oldLabelsData.off('*', this._update);
   }
 
   if (this.labelsData) {
     // subscribe to new dataset
-    var id = this.id;
-    util.forEach(this.itemListeners, function (callback, event) {
-      me.labelsData.on(event, callback, id);
-    });
+    this.labelsData.on('*', this._update); // listen to the events add, update, remove
 
     this._updateMinMax();
-
-    // add all new items
-    // ids = this.itemsData.getIds();
-    //this._onAdd(ids); // TODO: do we need _onAdd?
   }
 };
 
