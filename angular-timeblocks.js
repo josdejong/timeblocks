@@ -22,7 +22,9 @@ angular.module('ngTimeBlocks', [])
             'select',
             'doubleClick',
             'click',
-            'contextmenu'
+            'contextmenu',
+            'beforeRedraw',
+            'afterRedraw'
           ];
 
           // Declare the timeblocks visualization

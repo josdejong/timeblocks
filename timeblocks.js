@@ -115,6 +115,13 @@ var TimeBlocks = (function () {
       me._redraw();
     });
 
+    var _timelineRedraw = this._redraw.bind(this);
+    this._redraw = function () {
+      me.emit('beforeRedraw');
+      return _timelineRedraw();
+      me.emit('afterRedraw');
+    };
+
     // apply options
     if (options) {
       this.setOptions(options);
