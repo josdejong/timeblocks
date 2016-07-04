@@ -519,9 +519,13 @@ var TimeBlocks = (function () {
         var yMin = height - scale.convertValue(data.yMin);
         var yMax = height - scale.convertValue(data.yMax);
 
+        var contents = document.createElement('div');
+        contents.className = 'timeblocks-item-contents';
+        contents.appendChild(contentToHTML(data.content));
+        
         var item = document.createElement('div');
         item.className = 'timeblocks-item' + (data.className ? (' ' + data.className) : '');
-        item.appendChild(contentToHTML(data.content));
+        item.appendChild(contents);
         item.title = data.title || '';
 
         item.style.left = start + 'px';

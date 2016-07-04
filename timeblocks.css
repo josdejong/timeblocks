@@ -12,13 +12,18 @@
 }
 
 .timeblocks-item {
-  display: block;
+  display: table;
   background: #e5e5e5;
   border: 1px solid #d5d5d5;
   padding: 5px;
   text-align: center;
   overflow: hidden;
   box-shadow: 0 0 3px 1px rgba(0,0,0, 0.1)
+}
+
+.timeblocks-item-contents {
+  display: table-cell;
+  vertical-align: middle;
 }
 
 .timeblocks-labels {
