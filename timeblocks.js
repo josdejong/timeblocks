@@ -311,7 +311,7 @@ var TimeBlocks = (function () {
   }
 
   BlockGraph.prototype.setOptions = function (options) {
-    var fields = ['yMin', 'yMax'];
+    var fields = ['yMin', 'yMax', 'onRenderItem', 'onRenderLabel'];
     util.selectiveExtend(fields, this.options, options);
 
     this._updateMinMax();
@@ -439,6 +439,7 @@ var TimeBlocks = (function () {
     if (this.labelsData) {
       var scale = this.scale;
       var contentToHTML = this._contentToHTML;
+      var onRenderLabel = this.options.onRenderLabel;
 
       this.labelsData.forEach(function (data) {
         var yMin = height - scale.convertValue(data.yMin);
@@ -459,6 +460,10 @@ var TimeBlocks = (function () {
         label.style.boxSizing = 'border-box';
 
         label['timeblocks-label'] = data;
+
+        if (onRenderLabel) {
+          label = onRenderLabel(label, data);
+        }
 
         dom.labelsContainer.appendChild(label);
         dom.labels.push(label);
@@ -511,6 +516,7 @@ var TimeBlocks = (function () {
       var scale = this.scale;
       var dom = this.dom;
       var contentToHTML = this._contentToHTML;
+      var onRenderItem = this.options.onRenderItem;
 
       // TODO: filter on visible items and render only these
       this.itemsData.forEach(function (data) {
@@ -537,6 +543,10 @@ var TimeBlocks = (function () {
         item.style.boxSizing = 'border-box';
 
         item['timeblocks-item'] = data;
+
+        if (onRenderItem) {
+          item = onRenderItem(item, data);
+        }
 
         dom.items.appendChild(item);
         dom.values.push(item);
