@@ -118,8 +118,9 @@ var TimeBlocks = (function () {
     var _timelineRedraw = this._redraw.bind(this);
     this._redraw = function () {
       me.emit('beforeRedraw');
-      return _timelineRedraw();
+      var res = _timelineRedraw();
       me.emit('afterRedraw');
+      return res;
     };
 
     // apply options
