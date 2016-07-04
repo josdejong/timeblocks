@@ -365,8 +365,8 @@ var TimeBlocks = (function () {
     this.dom.verticalAxis = document.createElement('div');
     this.dom.verticalAxis.className = 'timeblocks-vertical-axis';
 
-    this.dom.items = document.createElement('div');
-    this.dom.items.className = 'timeblocks-items';
+    this.dom.itemsContainer = document.createElement('div');
+    this.dom.itemsContainer.className = 'timeblocks-items';
 
     this.dom.labelsContainer = document.createElement('div');
     this.dom.labelsContainer.className = 'timeblocks-labels';
@@ -399,7 +399,7 @@ var TimeBlocks = (function () {
         zeroAlign,
         formattingFunction);
 
-    this.dom.items.style.height = this.props.height + 'px';
+    this.dom.itemsContainer.style.height = this.props.height + 'px';
     this.dom.labelsContainer.style.height = this.props.height + 'px';
 
     var axisResized = this._redrawAxis();
@@ -523,35 +523,36 @@ var TimeBlocks = (function () {
 
   BlockGraph.prototype._redrawItems = function () {
     // attach to DOM
-    if (!this.dom.items.parentNode) {
-      this.body.dom.center.appendChild(this.dom.items)
+    if (!this.dom.itemsContainer.parentNode) {
+      this.body.dom.center.appendChild(this.dom.itemsContainer)
     }
 
-    // TODO: reuse existing items
-    this._removeDomElements(this.dom.items);
+    // we're going to reuse existing items
+    var redundantItems = this.dom.items;
+    this.dom.items = [];
 
     if (this.itemsData) {
+      var itemsData = this.itemsData;
       var height = this.props.height;
       var toScreen = this.body.util.toScreen;
       var scale = this.scale;
       var dom = this.dom;
       var contentToHTML = this._contentToHTML;
       var onRenderItem = this.options.onRenderItem;
+      var contentToString = this._contentToString;
 
       // TODO: filter on visible items and render only these
       this.itemsData.forEach(function (data) {
+        // TODO: create a class ItemBlock, move all item logic there
+        var id = data[itemsData._fieldId];
         var start = toScreen(util.convert(data.start, 'Date'));
         var end = toScreen(util.convert(data.end, 'Date'));
         var yMin = height - scale.convertValue(data.yMin);
         var yMax = height - scale.convertValue(data.yMax);
 
-        var contents = document.createElement('div');
-        contents.className = 'timeblocks-item-contents';
-        contents.appendChild(contentToHTML(data.content));
-        
-        var item = document.createElement('div');
+        // reuse existing DOM,
+        var item = redundantItems.shift() || document.createElement('div');
         item.className = 'timeblocks-item' + (data.className ? (' ' + data.className) : '');
-        item.appendChild(contents);
         item.title = data.title || '';
 
         item.style.left = start + 'px';
@@ -562,18 +563,66 @@ var TimeBlocks = (function () {
         item.style.position = 'absolute';
         item.style.boxSizing = 'border-box';
 
+        if (item.firstChild) {
+          // reuse existing item, update contents only when changed
+          var element = item.firstChild;
+
+          var changed = contentToString(item.content) !== contentToString(data.content);
+          if (changed) {
+            if (data.content instanceof Element) {
+              element.innerHTML = '';
+              element.appendChild(data.content);
+            }
+            else if (data.content != undefined) {
+              element.innerHTML = data.content;
+            }
+            else {
+              if (data.content === undefined) {
+                throw new Error('Property "content" missing in item ' + id);
+              }
+            }
+
+            item.content = data.content;
+          }
+        }
+        else {
+          // create new contents DOM
+          var contents = document.createElement('div');
+          contents.className = 'timeblocks-item-contents';
+          contents.appendChild(contentToHTML(data.content));
+          item.appendChild(contents);
+        }
+
         item['timeblocks-item'] = data;
 
         if (onRenderItem) {
           item = onRenderItem(item, data);
         }
 
-        dom.items.appendChild(item);
-        dom.values.push(item);
+        if (!item.parentNode) {
+          // this is a new item
+          dom.itemsContainer.appendChild(item);
+        }
+        dom.items.push(item);
       });
     }
 
+    this._removeDomElements(redundantItems);
+
     return false; // size of contents never changes
+  };
+
+
+  /**
+   * Stringify the items contents
+   * @param {string | Element | undefined} content
+   * @returns {string | undefined}
+   * @private
+   */
+  BlockGraph.prototype._contentToString = function (content) {
+    if (typeof content === 'string') return content;
+    if (content && 'outerHTML' in content) return content.outerHTML;
+    return content;
   };
 
 
