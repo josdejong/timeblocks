@@ -12,18 +12,21 @@
 }
 
 .timeblocks-item {
-  display: table;
+  display: block;
   background: #e5e5e5;
   border: 1px solid #d5d5d5;
   padding: 5px;
   text-align: center;
+  vertical-align: text-top;
   overflow: hidden;
   box-shadow: 0 0 3px 1px rgba(0,0,0, 0.1)
 }
 
 .timeblocks-item-contents {
-  display: table-cell;
+  display: inline-block;
   vertical-align: middle;
+  line-height: normal;
+  margin-top: -10px; /* half of the line height FIXME: really calculate the right margin top */
 }
 
 .timeblocks-labels {
@@ -46,7 +49,7 @@
   overflow: hidden;
 }
 
-.timeblocks-label .timeblocks-contents {
+.timeblocks-label .timeblocks-label-contents {
   transform: rotate(-90deg);
   display: inline-block;
   padding: 5px;
@@ -54,7 +57,7 @@
   white-space: nowrap;
 }
 
-.timeblocks-label .timeblocks-contents:after {
+.timeblocks-label .timeblocks-label-contents:after {
   content: "";
   float: left;
   margin-top: 100%;

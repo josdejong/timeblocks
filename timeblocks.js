@@ -445,7 +445,7 @@ var TimeBlocks = (function () {
         var yMax = height - scale.convertValue(data.yMax);
 
         var contents = document.createElement('div');
-        contents.className = 'timeblocks-contents';
+        contents.className = 'timeblocks-label-contents';
         contents.appendChild(contentToHTML(data.content));
 
         var label = document.createElement('div');
@@ -532,6 +532,7 @@ var TimeBlocks = (function () {
         item.style.width = (end - start) + 'px';
         item.style.top = yMin + 'px';
         item.style.height = (yMax - yMin) + 'px';
+        item.style.lineHeight = item.style.height; // for vertically aligning contents to the middle
         item.style.position = 'absolute';
         item.style.boxSizing = 'border-box';
 
