@@ -1,0 +1,104 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>TimeBlocks | Basic demo</title>
+
+  <style type="text/css">
+    body, html {
+      font-family: sans-serif;
+    }
+
+    #visualization {
+      height: 400px;
+    }
+  </style>
+
+  <!-- load vis.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.css" rel="stylesheet" type="text/css" />
+
+  <!-- load timeblocks -->
+  <script src="../timeblocks.js"></script>
+  <link href="../timeblocks.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+
+<p>
+  A basic TimeBlocks visualization.
+</p>
+
+<div id="visualization"></div>
+
+<script type="text/javascript">
+  // DOM element where the Timeblocks will be attached
+  var container = document.getElementById('visualization');
+
+  // Create a DataSet (allows two way data-binding)
+  var items = new vis.DataSet([
+    {
+      id: 1,
+      yMin: 2,
+      yMax: 4,
+      content: 'item 1 (2-4)',
+      title: 'item 1 (2-4)',
+      start: '2016-04-16',
+      end: '2016-04-19'
+    },
+    {
+      id: 2,
+      yMin: 8,
+      yMax: 11,
+      content: 'item 2 (8-11)',
+      title: 'item 2 (8-11)',
+      start: '2016-04-22',
+      end: '2016-04-28'
+    },
+    {
+      id: 3,
+      yMin: 4,
+      yMax: 7,
+      content: 'item 3 (4-7)',
+      title: 'item 3 (4-7)',
+      start: '2016-04-18',
+      end: '2016-04-28'
+    },
+    {
+      id: 4,
+      yMin: 80,
+      yMax: 96,
+      content: 'item 4 (80-96)',
+      title: 'item 4 (80-96)',
+      start: '2016-04-29',
+      end: '2016-05-02'
+    }
+  ]);
+
+  var labels = new vis.DataSet([
+    {
+      id: 1,
+      yMin: 4,
+      yMax: 11,
+      content: 'Some label',
+      title: 'Some label'
+    },
+    {
+      id: 2,
+      yMin: 43,
+      yMax: 84,
+      content: 'Another label',
+      title: 'Another label'
+    }
+  ]);
+
+  // Configuration for the TimeBlocks
+  var options = {
+    height: '100%',
+    orientation: 'top',
+    yScale: 10     // 10 pixels per unit on the vertical axis
+  };
+
+  // Create a TimeBlocks
+  var timeblocks = new TimeBlocks(container, items, labels, options);
+</script>
+</body>
+</html>

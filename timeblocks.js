@@ -242,7 +242,7 @@ var TimeBlocks = (function () {
     }
     var y = clientY - util.getAbsoluteTop(this.dom.centerContainer);
     var time = this._toTime(x);
-    var height = this.body.domProps.leftContainer.height;
+    var height = this.blockGraph.props.height;
     var yValue = this.blockGraph.scale.screenToValue(height - y);
 
     var item  = this.blockGraph.itemFromTarget(event);
@@ -319,7 +319,7 @@ var TimeBlocks = (function () {
   }
 
   BlockGraph.prototype.setOptions = function (options) {
-    var fields = ['yMin', 'yMax', 'onRenderItem', 'onRenderLabel'];
+    var fields = ['yMin', 'yMax', 'yScale', 'onRenderItem', 'onRenderLabel'];
     util.selectiveExtend(fields, this.options, options);
 
     this._updateMinMax();
@@ -373,6 +373,35 @@ var TimeBlocks = (function () {
   };
 
   BlockGraph.prototype.redraw = function () {
+    if (this.options.yScale) {
+      const yDiff = this.props.yMax - this.props.yMin;
+      this.props.height = yDiff * this.options.yScale;
+    }
+    else {
+      // fit the surrounding box
+      this.props.height = this.body.domProps.centerContainer.height;
+    }
+
+    function formattingFunction (value) {
+      return String(value);
+    }
+
+    // FIXME: the max determined by DataScale is sometimes larger than provided yMax
+    var charHeight = this.props.charHeight;
+    var zeroAlign = false;
+    this.scale = new DataScale(
+        this.props.yMin,
+        this.props.yMax,
+        this.props.yMin,
+        this.props.yMax,
+        this.props.height,
+        charHeight * 2, // we multiply the charHeight as we want to have more whitespace
+        zeroAlign,
+        formattingFunction);
+
+    this.dom.items.style.height = this.props.height + 'px';
+    this.dom.labelsContainer.style.height = this.props.height + 'px';
+
     var axisResized = this._redrawAxis();
 
     var itemsResized = this._redrawItems();
@@ -382,28 +411,11 @@ var TimeBlocks = (function () {
 
   BlockGraph.prototype._redrawAxis = function () {
     var resized = false;
-    var height = this.body.domProps.leftContainer.height;
+    var height = this.props.height;
     var charHeight = this.props.charHeight;
     var gridWidth = 16; // TODO: make customizable
     var props = this.props;
     var dom = this.dom;
-
-    var zeroAlign = false;
-
-    function formattingFunction (value) {
-      return String(value);
-    }
-
-    // FIXME: the max determined by DataScale is sometimes larger than provided yMax
-    this.scale = new DataScale(
-        this.props.yMin,
-        this.props.yMax,
-        this.props.yMin,
-        this.props.yMax,
-        height,
-        charHeight * 2, // we multiply the charHeight as we want to have more whitespace
-        zeroAlign,
-        formattingFunction);
 
     var lines = this.scale.getLines();
 
@@ -519,7 +531,7 @@ var TimeBlocks = (function () {
     this._removeDomElements(this.dom.items);
 
     if (this.itemsData) {
-      var height = this.body.domProps.leftContainer.height;
+      var height = this.props.height;
       var toScreen = this.body.util.toScreen;
       var scale = this.scale;
       var dom = this.dom;
@@ -561,9 +573,9 @@ var TimeBlocks = (function () {
       });
     }
 
-    this.dom.items.style.height = height + 'px';
+    // this.dom.items.style.height = height + 'px';
 
-    resized = false;
+    var resized = false;
     return resized;
   };
 
