@@ -236,7 +236,6 @@ var TimeBlocks = (function () {
     var time = this._toTime(x);
     var height = this.body.domProps.leftContainer.height;
     var yValue = this.blockGraph.scale.screenToValue(height - y);
-    console.log('height', height, yValue)
 
     var item  = this.blockGraph.itemFromTarget(event);
     var label = this.blockGraph.labelFromTarget(event);
@@ -450,7 +449,7 @@ var TimeBlocks = (function () {
         contents.appendChild(contentToHTML(data.content));
 
         var label = document.createElement('div');
-        label.className = 'timeblocks-label';
+        label.className = 'timeblocks-label' + (data.className ? (' ' + data.className) : '');
         label.appendChild(contents);
         label.title = data.title || '';
 
@@ -521,7 +520,7 @@ var TimeBlocks = (function () {
         var yMax = height - scale.convertValue(data.yMax);
 
         var item = document.createElement('div');
-        item.className = 'timeblocks-item';
+        item.className = 'timeblocks-item' + (data.className ? (' ' + data.className) : '');
         item.appendChild(contentToHTML(data.content));
         item.title = data.title || '';
 
