@@ -573,10 +573,7 @@ var TimeBlocks = (function () {
       });
     }
 
-    // this.dom.items.style.height = height + 'px';
-
-    var resized = false;
-    return resized;
+    return false; // size of contents never changes
   };
 
 
