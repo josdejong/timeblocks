@@ -38,14 +38,28 @@ angular.module('ngTimeBlocks', [])
             timeblocks.setOptions(options);
           });
 
-          // TODO: watch events
-          // // Attach an event handler if defined
-          // angular.forEach(scope.events, function (callback, event) {
-          //   if (timeblocksEvents.indexOf(String(event)) >= 0) {
-          //     timeblocks.on(event, callback);
-          //   }
-          // });
+          // Attach an event handlers
+          timeblocksEvents.forEach(function (event) {
+            timeblocks.on(event, function callback () {
+              var args = [];
+              for (var i = 0; i < arguments.length; i++) {
+                args[i] = arguments[i];
+              }
 
+              if (scope.events && scope.events[event]) {
+                scope.events[event].apply(null, args);
+              }
+            });
+          });
+
+          if (scope.events && scope.events.onload) {
+            scope.events.onload(timeblocks);
+          }
+
+          // TODO: implement select event
+          if (scope.events && scope.events.select) {
+            throw new Error('Select event is not yet implemented...')
+          }
         }
       };
     });

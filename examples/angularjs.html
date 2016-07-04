@@ -29,7 +29,10 @@
     <button ng-click="example.update()">Update</button>
   </p>
   <div class="timeblocks-container">
-    <vis-timeblocks data="example.data" options="example.options" />
+    <vis-timeblocks
+        data="example.data"
+        options="example.options"
+        events="example.events"></vis-timeblocks>
 
   </div>
 </div>
@@ -107,6 +110,18 @@
     this.update = function () {
       items.update({ id: 1, content: 'Updated...' });
       labels.update({ id: 1, content: 'Updated...' });
+    };
+
+    this.events = {
+      onload: function (ref) {
+        console.log('onload', ref)
+      },
+      select: function (params) {
+        console.log('select', params)
+      },
+      click: function (params) {
+        console.log('click', params)
+      }
     }
 
   });

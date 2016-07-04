@@ -103,6 +103,7 @@ var TimeBlocks = (function () {
     this.on('tap', function (event) {
       me.emit('click', me.getEventProperties(event))
     });
+    // TODO: implement select
     this.on('doubletap', function (event) {
       me.emit('doubleClick', me.getEventProperties(event))
     });
@@ -224,7 +225,45 @@ var TimeBlocks = (function () {
    *                  The event happened, whether clicked on an item, etc.
    */
   TimeBlocks.prototype.getEventProperties = function (event) {
-    // TODO: implement getEventProperties for TimeBlocks
+    var clientX = event.center ? event.center.x : event.clientX;
+    var clientY = event.center ? event.center.y : event.clientY;
+    if (this.options.rtl) {
+      var x = util.getAbsoluteRight(this.dom.centerContainer) - clientX;
+    } else {
+      var x = clientX - util.getAbsoluteLeft(this.dom.centerContainer);
+    }
+    var y = clientY - util.getAbsoluteTop(this.dom.centerContainer);
+    var time = this._toTime(x);
+    var height = this.body.domProps.leftContainer.height;
+    var yValue = this.blockGraph.scale.screenToValue(height - y);
+    console.log('height', height, yValue)
+
+    var item  = this.blockGraph.itemFromTarget(event);
+    var label = this.blockGraph.labelFromTarget(event);
+    var customTime = CustomTime.customTimeFromTarget(event);
+
+    var element = util.getTarget(event);
+    var what = null;
+    if (item != null)                                                    {what = 'item';}
+    else if (label != null)                                              {what = 'label';}
+    else if (customTime != null)                                         {what = 'custom-time';}
+    else if (util.hasParent(element, this.timeAxis.dom.foreground))      {what = 'axis';}
+    else if (this.timeAxis2 && util.hasParent(element, this.timeAxis2.dom.foreground)) {what = 'axis';}
+    else if (util.hasParent(element, this.currentTime.bar))              {what = 'current-time';}
+    else if (util.hasParent(element, this.dom.center))                   {what = 'background';}
+
+    return {
+      event: event,
+      item: item ? item[this.itemsData._fieldId] : null,
+      label: label ? label[this.labelsData._fieldId] : null,
+      what: what,
+      pageX: event.srcEvent ? event.srcEvent.pageX : event.pageX,
+      pageY: event.srcEvent ? event.srcEvent.pageY : event.pageY,
+      x: x,
+      y: y,
+      time: time,
+      yValue: yValue
+    }
   };
 
 
@@ -420,6 +459,8 @@ var TimeBlocks = (function () {
         label.style.position = 'absolute';
         label.style.boxSizing = 'border-box';
 
+        label['timeblocks-label'] = data;
+
         dom.labelsContainer.appendChild(label);
         dom.labels.push(label);
       })
@@ -491,6 +532,8 @@ var TimeBlocks = (function () {
         item.style.position = 'absolute';
         item.style.boxSizing = 'border-box';
 
+        item['timeblocks-item'] = data;
+
         dom.items.appendChild(item);
         dom.values.push(item);
       });
@@ -555,6 +598,42 @@ var TimeBlocks = (function () {
 
       this._updateMinMax();
     }
+  };
+
+  /**
+   * Find an item from an event target:
+   * searches for the attribute 'timeblocks-item' in the event target's element tree
+   * @param {Event} event
+   * @return {Object || null} item    Returns the items data
+   */
+  BlockGraph.prototype.itemFromTarget = function(event) {
+    var target = event.target;
+    while (target) {
+      if (target.hasOwnProperty('timeblocks-item')) {
+        return target['timeblocks-item'];
+      }
+      target = target.parentNode;
+    }
+
+    return null;
+  };
+
+  /**
+   * Find a label from an event target:
+   * searches for the attribute 'timeblocks-label' in the event target's element tree
+   * @param {Event} event
+   * @return {Object || null} item    Returns the items data
+   */
+  BlockGraph.prototype.labelFromTarget = function(event) {
+    var target = event.target;
+    while (target) {
+      if (target.hasOwnProperty('timeblocks-label')) {
+        return target['timeblocks-label'];
+      }
+      target = target.parentNode;
+    }
+
+    return null;
   };
 
   /**
