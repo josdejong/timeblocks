@@ -274,6 +274,43 @@ var TimeBlocks = (function () {
   };
 
 
+  /**
+   * Adjust the visible window such that the selected item is centered on screen.
+   * @param {String} id     An item id
+   */
+  TimeBlocks.prototype.focus = function(id) {
+    if (!this.itemsData || id == undefined) return;
+
+    // get the specified item(s)
+    var itemData = this.itemsData.getDataSet().get(id, {
+      type: {
+        start: 'Date',
+        end: 'Date'
+      }
+    });
+
+    // calculate vertical position for the scroll top
+    var yAvg = (itemData.yMin + itemData.yMax) / 2;
+    var height = this.blockGraph.props.height;
+    var yScreen = height - this.blockGraph.scale.convertValue(yAvg);
+    var windowHeight = this.body.domProps.centerContainer.height;
+    var scrollTop = yScreen - windowHeight / 2;
+    this._setScrollTop(-scrollTop);
+
+    // calculate minimum start and maximum end of specified items
+    var start = itemData.start.valueOf();
+    var end = itemData.end.valueOf();
+
+    if (start !== null && end !== null) {
+      // calculate the new middle and interval for the window
+      var middle = (start + end) / 2;
+      var interval = Math.max((this.range.end - this.range.start), (end - start) * 1.1);
+
+      var animation = false;
+      this.range.setRange(middle - interval / 2, middle + interval / 2, animation);
+    }
+  };
+
 
   /*****************************    BlockGraph    *******************************/
 

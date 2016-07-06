@@ -26,6 +26,9 @@
 <p>
   A basic TimeBlocks visualization.
 </p>
+<p>
+  <button id="focus">Focus on item 4</button>
+</p>
 
 <div id="visualization"></div>
 
@@ -99,6 +102,10 @@
 
   // Create a TimeBlocks
   var timeblocks = new TimeBlocks(container, items, labels, options);
+
+  document.getElementById('focus').onclick = function () {
+    timeblocks.focus(4);
+  }
 </script>
 </body>
 </html>
