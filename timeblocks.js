@@ -277,9 +277,13 @@ var TimeBlocks = (function () {
   /**
    * Adjust the visible window such that the selected item is centered on screen.
    * @param {String} id     An item id
+   * @param {Boolean} vertical Whether to focus vertically
+   * @param {Boolean} horizontal Whether to focus horizontally
    */
-  TimeBlocks.prototype.focus = function(id) {
+  TimeBlocks.prototype.focus = function(id, vertical, horizontal) {
     if (!this.itemsData || id == undefined) return;
+    if (vertical == undefined) vertical = true;
+    if (horizontal == undefined) horizontal = true;
 
     // get the specified item(s)
     var itemData = this.itemsData.getDataSet().get(id, {
@@ -289,26 +293,39 @@ var TimeBlocks = (function () {
       }
     });
 
-    // calculate vertical position for the scroll top
-    var yAvg = (itemData.yMin + itemData.yMax) / 2;
-    var height = this.blockGraph.props.height;
-    var yScreen = height - this.blockGraph.scale.convertValue(yAvg);
-    var windowHeight = this.body.domProps.centerContainer.height;
-    var scrollTop = yScreen - windowHeight / 2;
-    this._setScrollTop(-scrollTop);
+    if(itemData !== null) {
+      if (vertical) {
+        // calculate vertical position for the scroll top
+        var yAvg = (itemData.yMin + itemData.yMax) / 2;
+        var height = this.blockGraph.props.height;
+        var yScreen = height - this.blockGraph.scale.convertValue(yAvg);
+        var windowHeight = this.body.domProps.centerContainer.height;
+        var scrollTop = yScreen - windowHeight / 2;
+        this._setScrollTop(-scrollTop);
+      }
+      if (horizontal) {
+        // calculate minimum start and maximum end of specified items
+        var start = itemData.start.valueOf();
+        var end = itemData.end.valueOf();
 
-    // calculate minimum start and maximum end of specified items
-    var start = itemData.start.valueOf();
-    var end = itemData.end.valueOf();
+        if (start !== null && end !== null) {
+          // calculate the new middle and interval for the window
+          var middle = (start + end) / 2;
+          var interval = Math.max((this.range.end - this.range.start), (end - start) * 1.1);
 
-    if (start !== null && end !== null) {
-      // calculate the new middle and interval for the window
-      var middle = (start + end) / 2;
-      var interval = Math.max((this.range.end - this.range.start), (end - start) * 1.1);
-
-      var animation = false;
-      this.range.setRange(middle - interval / 2, middle + interval / 2, animation);
+          var animation = false;
+          this.range.setRange(middle - interval / 2, middle + interval / 2, animation);
+        }
+      }
     }
+  };
+
+  /**
+   * Adjust the visible window such that the selected item is centered vertically on the screen
+   * @param {String} id   An item id
+   */
+  TimeBlocks.prototype.focusVertically = function(id) {
+    this.focus(id, true, false)
   };
 
 
