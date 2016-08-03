@@ -6,11 +6,73 @@ var TimeBlocks = (function () {
   var Range = vis.timeline.Range;
   var Core = vis.timeline.Core;
   var TimeAxis = vis.timeline.components.TimeAxis;
-  var DataScale = vis.timeline.components.DataScale;
   var CurrentTime = vis.timeline.components.CurrentTime;
   var CustomTime = vis.timeline.components.CustomTime;
   var Timeline = vis.Timeline;
   var DateUtil = vis.timeline.DateUtil;
+
+
+  /************************    DefaultDataScale    ****************************/
+
+  /**
+   * Data scale
+   * @param {number} start              Start value of the scale
+   * @param {number} end                End value of the scale
+   * @param {number} containerHeight    Height of the TimeBlocks component in pixels
+   * @param {{margin: number?, format: function?, isMajor: function?}} [options]
+   * @constructor
+   */
+  function DataScale (start, end, containerHeight, options) {
+    this.start = start || 0;
+    this.end = end || 0;
+    this.containerHeight = containerHeight;
+
+    this.margin = options && typeof options.margin === 'number' ? options.margin: 16;
+    var range = this.end - this.start;
+    this.scale = (this.containerHeight - 2 * this.margin) / range;
+    this.step = 1;
+    this.format = options && typeof options.format === 'function'
+        ? options.format
+        : format;
+    this.isMajor = options && typeof options.isMajor === 'function'
+        ? options.isMajor
+        : function isMajor (value) {
+      return value % 10 === 0
+    }
+  }
+
+  DataScale.prototype.screenToValue = function (pixels) {
+    return ((pixels - this.margin) / this.scale) + this.start;
+  };
+
+  DataScale.prototype.valueToScreen = function (value) {
+    return (value - this.start) * this.scale + this.margin;
+  };
+
+  /**
+   * Returns an array with all labels
+   * @returns {Array.<{value: number, y: number, text: string, isMajor: boolean}>}
+   */
+  DataScale.prototype.getLabels = function () {
+    var labels = [];
+    var max = 1000;
+    var count = 0;
+    var value = this.start;
+
+    while (value <= this.end && count < max) {
+      labels.push({
+        value: value,
+        y: this.valueToScreen(value),
+        text: this.format(value),
+        isMajor: this.isMajor(value)
+      });
+
+      value += this.step;
+      count++;
+    }
+
+    return labels;
+  };
 
   /*****************************    TimeBlocks    *******************************/
 
@@ -93,7 +155,7 @@ var TimeBlocks = (function () {
     this.components.push(this.currentTime);
 
     // // item set
-    this.blockGraph = new BlockGraph(this.body, options || {});
+    this.blockGraph = new TimeBlocks.BlockGraph(this.body, options || {});
     this.components.push(this.blockGraph);
 
     this.itemsData = null;      // DataSet
@@ -242,8 +304,7 @@ var TimeBlocks = (function () {
     }
     var y = clientY - util.getAbsoluteTop(this.dom.centerContainer);
     var time = this._toTime(x);
-    var height = this.blockGraph.props.height;
-    var yValue = this.blockGraph.scale.screenToValue(height - y);
+    var yValue = this.blockGraph.scale.screenToValue(y);
 
     var item  = this.blockGraph.itemFromTarget(event);
     var label = this.blockGraph.labelFromTarget(event);
@@ -276,9 +337,9 @@ var TimeBlocks = (function () {
 
   /**
    * Adjust the visible window such that the selected item is centered on screen.
-   * @param {String} id     An item id
-   * @param {Boolean} vertical Whether to focus vertically
-   * @param {Boolean} horizontal Whether to focus horizontally
+   * @param {String | number} id     An item id
+   * @param {Boolean} [vertical] Whether to focus vertically
+   * @param {Boolean} [horizontal] Whether to focus horizontally
    */
   TimeBlocks.prototype.focus = function(id, vertical, horizontal) {
     if (!this.itemsData || id == undefined) return;
@@ -297,8 +358,7 @@ var TimeBlocks = (function () {
       if (vertical) {
         // calculate vertical position for the scroll top
         var yAvg = (itemData.yMin + itemData.yMax) / 2;
-        var height = this.blockGraph.props.height;
-        var yScreen = height - this.blockGraph.scale.convertValue(yAvg);
+        var yScreen = this.blockGraph.scale.valueToScreen(yAvg);
         var windowHeight = this.body.domProps.centerContainer.height;
         var scrollTop = yScreen - windowHeight / 2;
         this._setScrollTop(-scrollTop);
@@ -436,22 +496,11 @@ var TimeBlocks = (function () {
       this.props.height = this.body.domProps.centerContainer.height;
     }
 
-    function formattingFunction (value) {
-      return String(value);
-    }
-
-    // FIXME: the max determined by DataScale is sometimes larger than provided yMax
-    var charHeight = this.props.charHeight;
-    var zeroAlign = false;
-    this.scale = new DataScale(
-        this.props.yMin,
-        this.props.yMax,
-        this.props.yMin,
-        this.props.yMax,
-        this.props.height,
-        charHeight * 2, // we multiply the charHeight as we want to have more whitespace
-        zeroAlign,
-        formattingFunction);
+    this.scale = new TimeBlocks.DataScale(this.props.yMin, this.props.yMax, this.props.height, {
+      isMajor: function (value) {
+        return value % 5 === 0
+      }
+    });
 
     this.dom.itemsContainer.style.height = this.props.height + 'px';
     this.dom.labelsContainer.style.height = this.props.height + 'px';
@@ -465,13 +514,12 @@ var TimeBlocks = (function () {
 
   BlockGraph.prototype._redrawAxis = function () {
     var resized = false;
-    var height = this.props.height;
     var charHeight = this.props.charHeight;
-    var gridWidth = 16; // TODO: make customizable
+    var gridWidth = 20; // TODO: make customizable
     var props = this.props;
     var dom = this.dom;
 
-    var lines = this.scale.getLines();
+    var labels = this.scale.getLabels();
 
     // attach to DOM
     if (!this.dom.verticalAxis.parentNode) {
@@ -487,27 +535,29 @@ var TimeBlocks = (function () {
     this._removeDomElements(this.dom.grid);
     this._removeDomElements(this.dom.labels);
 
-    lines.forEach(function (line) {
+    labels.forEach(function (label) {
       var grid = document.createElement('div');
-      grid.className = 'timeblocks-grid-line ' + (line.major ? 'vis-major' : 'vis-minor');
-      grid.style.top = (height - line.y) + 'px';
-      grid.style.right = '0';
-      grid.style.width = (props.valueWidth + gridWidth) + 'px';
+      grid.className = 'timeblocks-grid-line ' + (label.isMajor ? 'vis-major' : 'vis-minor');
+      grid.style.top = label.y + 'px';
+      grid.style.right = props.valueWidth + 'px';
+      grid.style.width = (label.isMajor ? gridWidth : gridWidth / 2) + 'px';
       grid.style.position = 'absolute';
 
       dom.verticalAxis.appendChild(grid);
       dom.grid.push(grid);
 
-      var value = document.createElement('div');
-      value.className = 'timeblocks-grid-value ' + (line.major ? 'vis-major' : 'vis-minor');
-      value.appendChild(document.createTextNode(format(line.val)));
-      value.style.top = (height - line.y - charHeight / 2 + 1) + 'px';
-      value.style.right = '0';
-      value.style.position = 'absolute';
-      value.style.boxSizing = 'border-box';
+      if (label.isMajor) {
+        var value = document.createElement('div');
+        value.className = 'timeblocks-grid-value ' + (label.isMajor ? 'vis-major' : 'vis-minor');
+        value.appendChild(document.createTextNode(label.text));
+        value.style.top = (label.y - charHeight / 2 + 1) + 'px';
+        value.style.right = '0';
+        value.style.position = 'absolute';
+        value.style.boxSizing = 'border-box';
 
-      dom.verticalAxis.appendChild(value);
-      dom.values.push(value);
+        dom.verticalAxis.appendChild(value);
+        dom.values.push(value);
+      }
     });
 
     if (this.labelsData) {
@@ -516,8 +566,8 @@ var TimeBlocks = (function () {
       var onRenderLabel = this.options.onRenderLabel;
 
       this.labelsData.forEach(function (data) {
-        var yMin = height - scale.convertValue(data.yMin);
-        var yMax = height - scale.convertValue(data.yMax);
+        var yMin = scale.valueToScreen(data.yMin);
+        var yMax = scale.valueToScreen(data.yMax);
 
         var contents = document.createElement('div');
         contents.className = 'timeblocks-label-contents';
@@ -601,8 +651,8 @@ var TimeBlocks = (function () {
         var id = data[itemsData._fieldId];
         var start = toScreen(util.convert(data.start, 'Date'));
         var end = toScreen(util.convert(data.end, 'Date'));
-        var yMin = height - scale.convertValue(data.yMin);
-        var yMax = height - scale.convertValue(data.yMax);
+        var yMin = scale.valueToScreen(data.yMin);
+        var yMax = scale.valueToScreen(data.yMax);
 
         // reuse existing DOM,
         var item = redundantItems.shift() || document.createElement('div');
@@ -812,6 +862,11 @@ var TimeBlocks = (function () {
       return parseFloat(number.toPrecision(12)) + '';
     }
   }
+
+  // export the prototypes we've created, allow overriding/extending
+  TimeBlocks.format = format;
+  TimeBlocks.BlockGraph = BlockGraph;
+  TimeBlocks.DataScale = DataScale;
 
   return TimeBlocks
 })();
