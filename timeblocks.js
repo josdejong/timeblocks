@@ -59,16 +59,18 @@ var TimeBlocks = (function () {
     var count = 0;
     var value = this.start;
 
-    while (value <= this.end && count < max) {
-      labels.push({
-        value: value,
-        y: this.valueToScreen(value),
-        text: this.format(value),
-        isMajor: this.isMajor(value)
-      });
+    if (this.end > this.start) {
+      while (value <= this.end && count < max) {
+        labels.push({
+          value: value,
+          y: this.valueToScreen(value),
+          text: this.format(value),
+          isMajor: this.isMajor(value)
+        });
 
-      value += this.step;
-      count++;
+        value += this.step;
+        count++;
+      }
     }
 
     return labels;
@@ -210,7 +212,27 @@ var TimeBlocks = (function () {
   TimeBlocks.prototype.setOptions = function (options) {
     // TODO: validate options
 
+    var yScale = this.blockGraph.options.yScale;
+    var yScaleChanged = typeof options.yScale !== 'undefined' && yScale !== options.yScale;
+    var scrollTop = this.props.scrollTop;
+    var height = this.body.domProps.centerContainer.height;
+    var middle = this.blockGraph.scale.screenToValue(height / 2 - scrollTop);
+
     Core.prototype.setOptions.call(this, options);
+
+    if (yScaleChanged) {
+      // prevent screen from jumping vertically to some new position
+      // by adjusting the scrollTOp and scrollTopMin
+      var yScreen = this.blockGraph.scale.valueToScreen(middle);
+      var windowHeight = this.body.domProps.centerContainer.height;
+      var newScrollTop = windowHeight / 2 - yScreen;
+
+      var diff = this.dom.center.clientHeight - this.props.center.height;
+      this.props.scrollTop = newScrollTop;
+      this.props.scrollTopMin -= diff;
+
+      this._redraw();
+    }
   };
 
   /**
@@ -388,6 +410,31 @@ var TimeBlocks = (function () {
     this.focus(id, true, false)
   };
 
+  /**
+   * Move vertically, center a specific value
+   * @param {number} y
+   */
+  TimeBlocks.prototype.moveToVertically = function (y) {
+    var yScreen = this.blockGraph.scale.valueToScreen(y);
+    var windowHeight = this.body.domProps.centerContainer.height;
+    var scrollTop = yScreen - windowHeight / 2;
+    this._setScrollTop(-scrollTop);
+    this._redraw();
+  };
+
+  /**
+   * Get the vertical visible window
+   * @returns {{yMin: number, yMax: number}}
+   */
+  TimeBlocks.prototype.getWindowVertically = function () {
+    var scrollTop = this.props.scrollTop;
+    var height = this.body.domProps.centerContainer.height;
+
+    return {
+      yMin: this.blockGraph.scale.screenToValue(-scrollTop),
+      yMax: this.blockGraph.scale.screenToValue(height - scrollTop)
+    }
+  };
 
   /*****************************    BlockGraph    *******************************/
 
@@ -417,6 +464,8 @@ var TimeBlocks = (function () {
       yMin: null,
       yMax: null
     };
+
+    this.scale = new TimeBlocks.DataScale(0, 0, 0);
 
     // the _update method is called when anything in the DataSets changes
     var me = this;

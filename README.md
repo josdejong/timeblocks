@@ -9,3 +9,14 @@ The component comes with an Angular.js directive included.
 ## Usage
 
 See the examples in the folder `examples`.
+
+
+## Options
+
+Timeblocks supports most options available in Timeline.
+
+Additional options are:
+
+- `yMin`
+- `yMax`
+- `yScale`
