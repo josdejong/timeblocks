@@ -222,12 +222,12 @@ var TimeBlocks = (function () {
 
     if (yScaleChanged) {
       // prevent screen from jumping vertically to some new position
-      // by adjusting the scrollTOp and scrollTopMin
+      // by adjusting the scrollTop and scrollTopMin
       var yScreen = this.blockGraph.scale.valueToScreen(middle);
       var windowHeight = this.body.domProps.centerContainer.height;
       var newScrollTop = windowHeight / 2 - yScreen;
 
-      var diff = this.dom.center.clientHeight - this.props.center.height;
+      var diff = (options.yScale / yScale - 1) * this.props.center.height;
       this.props.scrollTop = newScrollTop;
       this.props.scrollTopMin -= diff;
 
