@@ -227,6 +227,7 @@ var TimeBlocks = (function () {
       var windowHeight = this.body.domProps.centerContainer.height;
       var newScrollTop = windowHeight / 2 - yScreen;
 
+      //var diff = this.dom.center.clientHeight - this.props.center.height;
       var diff = (options.yScale / yScale - 1) * this.props.center.height;
       this.props.scrollTop = newScrollTop;
       this.props.scrollTopMin -= diff;
@@ -709,7 +710,7 @@ var TimeBlocks = (function () {
         item.title = data.title || '';
 
         item.style.left = start + 'px';
-        item.style.width = (end - start) + 'px';
+        item.style.width = Math.max(end - start, 0) + 'px';
         item.style.top = yMin + 'px';
         item.style.height = (yMax - yMin) + 'px';
         item.style.lineHeight = item.style.height; // for vertically aligning contents to the middle
