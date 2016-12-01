@@ -124,9 +124,17 @@
   };
 
   // Create a TimeBlocks
-  var timeblocks = new TimeBlocks(container, options);
-  timeblocks.setItemsMulti([items1, items2]);
-  timeblocks.setLabelsMulti([labels1, labels2]);
+  var data = [
+    {
+      items: items1,
+      labels: labels1
+    },
+    {
+      items: items2,
+      labels: labels2
+    }
+  ];
+  var timeblocks = new TimeBlocks(container, data, options);
 </script>
 </body>
 </html>

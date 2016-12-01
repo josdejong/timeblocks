@@ -28,12 +28,10 @@ angular.module('ngTimeBlocks', [])
           ];
 
           // Declare the timeblocks visualization
-          var timeblocks = new TimeBlocks(element[0], scope.data.items, scope.data.labels, scope.options || {});
+          var timeblocks = new TimeBlocks(element[0], scope.data, scope.options || {});
 
           scope.$watchCollection('data', function () {
-            timeblocks.setItems(scope.data.items);
-            timeblocks.setLabels(scope.data.labels);
-            timeblocks._redraw(); // TODO: should become redundant?
+            timeblocks.setData(scope.data);
           });
 
           scope.$watchCollection('options', function (options) {

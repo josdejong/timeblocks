@@ -101,7 +101,11 @@
   };
 
   // Create a TimeBlocks
-  var timeblocks = new TimeBlocks(container, items, labels, options);
+  var data = {
+    items: items,
+    labels: labels
+  };
+  var timeblocks = new TimeBlocks(container, data, options);
 
   document.getElementById('focus').onclick = function () {
     timeblocks.focus(4);

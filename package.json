@@ -1,6 +1,6 @@
 {
   "name": "timeblocks",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "timeblocks extension for vis.js",
   "main": "timeblocks.js",
   "scripts": {

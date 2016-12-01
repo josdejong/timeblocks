@@ -9,6 +9,13 @@ var TimeBlocks = (function () {
   var CurrentTime = vis.timeline.components.CurrentTime;
   var CustomTime = vis.timeline.components.CustomTime;
 
+  /**
+   * @typedef {{
+   * items: vis.DataSet | vis.DataView | null,
+   * labels: vis.DataSet | vis.DataView | null
+   * }} TimeBlocksData
+   */
+
 
   /************************    DefaultDataScale    ****************************/
 
@@ -80,23 +87,12 @@ var TimeBlocks = (function () {
   /**
    * Create a TimeBlocks visualization
    * @param {HTMLElement} container
-   * @param {vis.DataSet | Array} [items]
-   * @param {vis.DataSet | Array} [labels]
+   * @param {TimeBlocksData || TimeBlocksData[]} [data]
    * @param {Object} [options]  See TimeBlocks.setOptions for the available options.
    * @constructor
    * @extends Core
    */
-  function TimeBlocks (container, items, labels, options) {
-    if (arguments.length === 3) {
-      options = labels;
-      labels = null;
-    }
-    if (arguments.length === 2) {
-      options = items;
-      items = null;
-      labels = null;
-    }
-
+  function TimeBlocks (container, data, options) {
     var me = this;
     this.defaultOptions = {
       start: null,
@@ -162,8 +158,6 @@ var TimeBlocks = (function () {
     this.blockGraphs = [];
 
     this._windowInitialized = false;
-    this._itemsDataSetCount = 0;
-    this._labelsDataSetCount = 0;
 
     this.on('tap', function (event) {
       me.emit('click', me.getEventProperties(event))
@@ -193,14 +187,9 @@ var TimeBlocks = (function () {
       this.setOptions(options);
     }
 
-    // create labels
-    if (labels) {
-      this.setLabels(labels);
-    }
-
-    // create itemset
-    if (items) {
-      this.setItems(items);
+    // apply data
+    if (data) {
+      this.setData(data);
     }
 
     // draw for the first time
@@ -241,11 +230,11 @@ var TimeBlocks = (function () {
   /**
    * Create BlockGraphs to fit the max number of item sets and
    * label sets, remove redundant BlockGraphs.
+   * @param {number} count   The number of blockgraphs
    * @private
    */
-  TimeBlocks.prototype._ensureBlockGraphs = function () {
+  TimeBlocks.prototype._ensureBlockGraphs = function (count) {
     var blockGraph;
-    var count = Math.max(this._itemsDataSetCount, this._labelsDataSetCount);
 
     while (this.blockGraphs.length < count) {
       blockGraph = new TimeBlocks.BlockGraph(this.body, this.allOptions);
@@ -264,97 +253,35 @@ var TimeBlocks = (function () {
   };
 
   /**
-   * Set an itemset
-   * @param {vis.DataSet | Array | null} items
+   * Set one or multiple data sets.
+   * Each data set is an object with properties `items` and `labels`.
+   * @param {TimeBlocksData | TimeBlocksData[] | null} data
    */
-  TimeBlocks.prototype.setItems = function(items) {
-    // create blockGraphs if needed
-    this._itemsDataSetCount = 1;
-    this._ensureBlockGraphs();
-
-    this.blockGraphs[0].setItems(this._toDataSet(items));
-
-    if (items && !this._windowInitialized) {
-      this._windowInitialized = true;
-      this._initWindow();
-    }
-    else {
-      // TODO: redraw when needed
-    }
-  };
-
-  /**
-   * Set multiple itemsets
-   * @param {Array.<vis.DataSet | Array | null>} multiItems
-   */
-  TimeBlocks.prototype.setItemsMulti = function(multiItems) {
-    // create blockGraphs if needed
-    this._itemsDataSetCount = multiItems.length;
-    this._ensureBlockGraphs();
-
-    var me = this;
-    multiItems.forEach(function (items, index) {
-      me.blockGraphs[index].setItems(me._toDataSet(items));
-    });
-
-    if (multiItems.length && !this._windowInitialized) {
-      this._windowInitialized = true;
-      this._initWindow();
-    }
-    else {
-      // TODO: redraw when needed
-    }
-  };
-
-  /**
-   * Set labels displayed on the vertical axis
-   * @param {vis.DataSet | Array} labels
-   */
-  TimeBlocks.prototype.setLabels = function(labels) {
-    // create blockGraphs if needed
-    this._labelsDataSetCount = 1;
-    this._ensureBlockGraphs();
-
-    this.blockGraphs[0].setLabels(this._toDataSet(labels));
-
-    // TODO: redraw when needed
-  };
-
-  /**
-   * Set labels displayed on the vertical axis
-   * @param {Array.<vis.DataSet | Array | null>} multiLabels
-   */
-  TimeBlocks.prototype.setLabelsMulti = function(multiLabels) {
-    // create blockGraphs if needed
-    this._labelsDataSetCount = 1;
-    this._ensureBlockGraphs();
-
-    var me = this;
-    multiLabels.forEach(function (labels, index) {
-      me.blockGraphs[index].setLabels(me._toDataSet(labels));
-    });
-
-    // TODO: redraw when needed
-  };
-
-  /**
-   * Convert an Array into a DataSet or DataView
-   * @param {DataSet | DataView | Array} data
-   * @returns {DataSet | DataView}
-   * @private
-   */
-  TimeBlocks.prototype._toDataSet = function (data) {
+  TimeBlocks.prototype.setData = function(data) {
     if (Array.isArray(data)) {
-      // turn an array into a DataSet
-      return new DataSet(data, {
-        type: {
-          start: 'Date',
-          end: 'Date'
-        }
+      this._ensureBlockGraphs(data.length);
+
+      var me = this;
+      data.forEach(function (entry, index) {
+        me.blockGraphs[index].setData(entry);
       });
     }
+    else if (data) {
+      this._ensureBlockGraphs(1);
+
+      this.blockGraphs[0].setData(data);
+    }
     else {
-      return data
+      // no data
+      this._ensureBlockGraphs(0);
+    }
+
+    if (data && !this._windowInitialized) {
+      this._windowInitialized = true;
+      this._initWindow();
+    }
+    else {
+      this._redraw();
     }
   };
 
@@ -639,8 +566,7 @@ var TimeBlocks = (function () {
 
   BlockGraph.prototype.destroy = function () {
     // detach from DataSets
-    this.setItems(null);
-    this.setLabels(null);
+    this.setData(null);
 
     // detach from DOM
     if (this.dom.verticalAxis.parentNode) {
@@ -878,6 +804,26 @@ var TimeBlocks = (function () {
     return false; // size of contents never changes
   };
 
+  // test whether an item data contains all required properties
+  BlockGraph.prototype._validateItemData = function (item) {
+    REQUIRED_ITEM_PROPS.forEach(function (prop) {
+      if (item[prop] == undefined) {
+        throw new Error('Property ' + prop + ' missing in item ' + JSON.stringify(item));
+      }
+    });
+  };
+  var REQUIRED_ITEM_PROPS = ['start', 'end', 'yMin', 'yMax', 'content'];
+
+  // test whether a label data contains all required properties
+  BlockGraph.prototype._validateLabelData = function (label) {
+    REQUIRED_LABEL_PROPS.forEach(function (prop) {
+      if (label[prop] == undefined) {
+        throw new Error('Property ' + prop + ' missing in item ' + JSON.stringify(label));
+      }
+    });
+  };
+  var REQUIRED_LABEL_PROPS = ['yMin', 'yMax', 'content'];
+
   /**
    * Stringify the items contents
    * @param {string | Element | undefined} content
@@ -890,8 +836,42 @@ var TimeBlocks = (function () {
     return content;
   };
 
+  /**
+   * Set both items and labels for this BlockGraph
+   * @param {TimeBlocksData | null} data
+   */
+  BlockGraph.prototype.setData = function (data) {
+    var me = this;
 
-  BlockGraph.prototype.setItems = function (items) {
+    if (data && (!('items' in data) || !('labels' in data))) {
+      throw new TypeError('Object with properties "items" and "labels" expected.');
+    }
+
+    // validate whether the items are valid
+    if (data && data.items) {
+      data.items.forEach(function (item) {
+        me._validateItemData(item);
+      });
+    }
+    if (data && data.labels) {
+      data.labels.forEach(function (item) {
+        me._validateLabelData(item);
+      });
+    }
+
+    this._setItems(data && data.items || null);
+    this._setLabels(data && data.labels || null);
+  };
+
+  BlockGraph.prototype._setItems = function (items) {
+    // validate whether the items are valid
+    if (this.itemsData) {
+      var me = this;
+      this.itemsData.forEach(function (item) {
+        me._validateItemData(item);
+      });
+    }
+
     var oldItemsData = this.itemsData;
 
     // replace the dataset
@@ -918,7 +898,7 @@ var TimeBlocks = (function () {
     }
   };
 
-  BlockGraph.prototype.setLabels = function (labels) {
+  BlockGraph.prototype._setLabels = function (labels) {
     var oldLabelsData = this.labelsData;
 
     // replace the dataset

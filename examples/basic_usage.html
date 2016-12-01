@@ -102,7 +102,11 @@
   };
 
   // Create a TimeBlocks
-  var timeblocks = new TimeBlocks(container, items, labels, options);
+  var data = {
+    items: items,
+    labels: labels
+  };
+  var timeblocks = new TimeBlocks(container, data, options);
 </script>
 </body>
 </html>
