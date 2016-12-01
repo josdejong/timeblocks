@@ -390,28 +390,25 @@ var TimeBlocks = (function () {
    * @param {Boolean} [horizontal] Whether to focus horizontally
    */
   TimeBlocks.prototype.focus = function(id, vertical, horizontal) {
-    // FIXME: fix .focus()
-    if (!this.itemsData || id == undefined) return;
-    if (vertical == undefined) vertical = true;
-    if (horizontal == undefined) horizontal = true;
+    if (id == undefined) { return; }
+    if (vertical == undefined) { vertical = true; }
+    if (horizontal == undefined) { horizontal = true; }
 
-    // get the specified item(s)
-    var itemData = this.itemsData.getDataSet().get(id, {
-      type: {
-        start: 'Date',
-        end: 'Date'
-      }
-    });
+    // get the specified item
+    var itemData = this._findItem(id);
 
     if(itemData !== null) {
       if (vertical) {
         // calculate vertical position for the scroll top
-        var yAvg = (itemData.yMin + itemData.yMax) / 2;
-        var yScreen = this.blockGraph.scale.valueToScreen(yAvg);
+        var element = this._findDOM(id);
+        var rect = element.getBoundingClientRect();
+        var offset = this.body.dom.center.getBoundingClientRect().top;
+        var y = (rect.top + rect.bottom) / 2 - offset;
         var windowHeight = this.body.domProps.centerContainer.height;
-        var scrollTop = yScreen - windowHeight / 2;
+        var scrollTop = (y - windowHeight / 2);
         this._setScrollTop(-scrollTop);
       }
+
       if (horizontal) {
         // calculate minimum start and maximum end of specified items
         var start = itemData.start.valueOf();
@@ -430,38 +427,49 @@ var TimeBlocks = (function () {
   };
 
   /**
+   * Find the data of an item in any of the blockGraphs
+   * @param {string | number} id
+   * @returns {Object | null}
+   */
+  TimeBlocks.prototype._findItem = function (id) {
+    var options = {
+      type: {
+        start: 'Date',
+        end: 'Date'
+      }
+    };
+
+    for (var i = 0; i < this.blockGraphs.length; i++) {
+      var element = this.blockGraphs[i].itemsData.getDataSet().get(id, options);
+      if (element) {
+        return element;
+      }
+    }
+
+    return null;
+  };
+
+  /**
+   * Find the DOM element in any of the blockGraphs
+   * @param {string | number} id
+   * @returns {Element | null}
+   */
+  TimeBlocks.prototype._findDOM = function (id) {
+    for (var i = 0; i < this.blockGraphs.length; i++) {
+      var element = this.blockGraphs[i].findDOM(id);
+      if (element) {
+        return element;
+      }
+    }
+    return null;
+  };
+
+  /**
    * Adjust the visible window such that the selected item is centered vertically on the screen
    * @param {String} id   An item id
    */
   TimeBlocks.prototype.focusVertically = function(id) {
     this.focus(id, true, false)
-  };
-
-  /**
-   * Move vertically, center a specific value
-   * @param {number} y
-   */
-  TimeBlocks.prototype.moveToVertically = function (y) {
-    // FIXME: fix moveToVertically
-    var yScreen = this.blockGraph.scale.valueToScreen(y);
-    var windowHeight = this.body.domProps.centerContainer.height;
-    var scrollTop = yScreen - windowHeight / 2;
-    this._setScrollTop(-scrollTop);
-    this._redraw();
-  };
-
-  /**
-   * Get the vertical visible window
-   * @returns {{yMin: number, yMax: number}}
-   */
-  TimeBlocks.prototype.getWindowVertically = function () {
-    var scrollTop = this.props.scrollTop;
-    var height = this.body.domProps.centerContainer.height;
-
-    return {
-      yMin: this.blockGraph.scale.screenToValue(-scrollTop),
-      yMax: this.blockGraph.scale.screenToValue(height - scrollTop)
-    }
   };
 
   /*****************************    BlockGraph    *******************************/
@@ -802,6 +810,24 @@ var TimeBlocks = (function () {
     this._removeDomElements(redundantItems);
 
     return false; // size of contents never changes
+  };
+
+  /**
+   * Find the DOM element of an item
+   * @param {string | number} id
+   * @returns {Element | null} Returns the item's DOM when found, or null otherwise
+   */
+  BlockGraph.prototype.findDOM = function (id) {
+    var fieldId = this.itemsData._fieldId;
+
+    for (var i = 0; i < this.dom.items.length; i++) {
+      var element = this.dom.items[i];
+      if (element['timeblocks-item'][fieldId] === id) {
+        return element;
+      }
+    }
+
+    return null;
   };
 
   // test whether an item data contains all required properties

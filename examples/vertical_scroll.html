@@ -27,7 +27,8 @@
   A basic TimeBlocks visualization.
 </p>
 <p>
-  <button id="focus">Focus on item 4</button>
+  <button id="focus2">Focus on item 2</button>
+  <button id="focus4">Focus on item 4</button>
 </p>
 
 <div id="visualization"></div>
@@ -49,10 +50,10 @@
     },
     {
       id: 2,
-      yMin: 8,
-      yMax: 11,
-      content: 'item 2 (8-11)',
-      title: 'item 2 (8-11)',
+      yMin: 40,
+      yMax: 46,
+      content: 'item 2 (40-46)',
+      title: 'item 2 (40-46)',
       start: '2016-04-22',
       end: '2016-04-28'
     },
@@ -107,9 +108,13 @@
   };
   var timeblocks = new TimeBlocks(container, data, options);
 
-  document.getElementById('focus').onclick = function () {
+  document.getElementById('focus2').onclick = function () {
+    timeblocks.focus(2);
+  };
+
+  document.getElementById('focus4').onclick = function () {
     timeblocks.focus(4);
-  }
+  };
 </script>
 </body>
 </html>
