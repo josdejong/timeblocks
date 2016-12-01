@@ -8,8 +8,6 @@ var TimeBlocks = (function () {
   var TimeAxis = vis.timeline.components.TimeAxis;
   var CurrentTime = vis.timeline.components.CurrentTime;
   var CustomTime = vis.timeline.components.CustomTime;
-  var Timeline = vis.Timeline;
-  var DateUtil = vis.timeline.DateUtil;
 
 
   /************************    DefaultDataScale    ****************************/
@@ -160,9 +158,7 @@ var TimeBlocks = (function () {
     this.blockGraph = new TimeBlocks.BlockGraph(this.body, options || {});
     this.components.push(this.blockGraph);
 
-    this.itemsData = null;      // DataSet
-    this.labelsData = null;     // DataSet
-
+    this.initialLoad = true;
 
     this.on('tap', function (event) {
       me.emit('click', me.getEventProperties(event))
@@ -216,24 +212,25 @@ var TimeBlocks = (function () {
     var yScaleChanged = typeof options.yScale !== 'undefined' && yScale !== options.yScale;
     var scrollTop = this.props.scrollTop;
     var height = this.body.domProps.centerContainer.height;
-    var middle = this.blockGraph.scale.screenToValue(height / 2 - scrollTop);
+    // var middle = this.blockGraph.scale.screenToValue(height / 2 - scrollTop);
 
     Core.prototype.setOptions.call(this, options);
 
-    if (yScaleChanged) {
-      // prevent screen from jumping vertically to some new position
-      // by adjusting the scrollTop and scrollTopMin
-      var yScreen = this.blockGraph.scale.valueToScreen(middle);
-      var windowHeight = this.body.domProps.centerContainer.height;
-      var newScrollTop = windowHeight / 2 - yScreen;
-
-      //var diff = this.dom.center.clientHeight - this.props.center.height;
-      var diff = (options.yScale / yScale - 1) * this.props.center.height;
-      this.props.scrollTop = newScrollTop;
-      this.props.scrollTopMin -= diff;
-
-      this._redraw();
-    }
+    // FIXME: adjust scrollTop when yScaleChanged
+    // if (yScaleChanged) {
+    //   // prevent screen from jumping vertically to some new position
+    //   // by adjusting the scrollTop and scrollTopMin
+    //   var yScreen = this.blockGraph.scale.valueToScreen(middle);
+    //   var windowHeight = this.body.domProps.centerContainer.height;
+    //   var newScrollTop = windowHeight / 2 - yScreen;
+    //
+    //   //var diff = this.dom.center.clientHeight - this.props.center.height;
+    //   var diff = (options.yScale / yScale - 1) * this.props.center.height;
+    //   this.props.scrollTop = newScrollTop;
+    //   this.props.scrollTopMin -= diff;
+    //
+    //   this._redraw();
+    // }
   };
 
   /**
@@ -241,31 +238,12 @@ var TimeBlocks = (function () {
    * @param {vis.DataSet | Array | null} items
    */
   TimeBlocks.prototype.setItems = function(items) {
-    var initialLoad = (this.itemsData == null);
-
-    // convert to type DataSet when needed
-    var newDataSet;
-    if (!items) {
-      newDataSet = null;
-    }
-    else if (items instanceof DataSet || items instanceof DataView) {
-      newDataSet = items;
-    }
-    else {
-      // turn an array into a DataSet
-      newDataSet = new DataSet(items, {
-        type: {
-          start: 'Date',
-          end: 'Date'
-        }
-      });
-    }
-
     // set items
-    this.itemsData = newDataSet;
-    this.blockGraph.setItems(this.itemsData);
+    this.blockGraph.setItems(this._toDataSet(items));
 
-    if (initialLoad) {
+    if (items && this.initialLoad) {
+      this.initialLoad = false;
+
       if (this.options.start != undefined || this.options.end != undefined) {
         var start = this.options.start != undefined ? this.options.start : null;
         var end   = this.options.end != undefined   ? this.options.end : null;
@@ -285,31 +263,59 @@ var TimeBlocks = (function () {
    * @param {vis.DataSet | Array} labels
    */
   TimeBlocks.prototype.setLabels = function(labels) {
-    // convert to type DataSet when needed
-    var newDataSet;
-    if (!labels) {
-      newDataSet = null;
-    }
-    else if (labels instanceof DataSet || labels instanceof DataView) {
-      newDataSet = labels;
-    }
-    else {
-      // turn an array into a dataset
-      newDataSet = new DataSet(labels);
-    }
-
-    this.labelsData = newDataSet;
-    this.blockGraph.setLabels(this.labelsData);
+    this.blockGraph.setLabels(this._toDataSet(labels));
 
     // TODO: redraw when needed
+  };
+
+  /**
+   * Convert an Array into a DataSet or DataView
+   * @param {DataSet | DataView | Array} data
+   * @returns {DataSet | DataView}
+   * @private
+   */
+  TimeBlocks.prototype._toDataSet = function (data) {
+    if (Array.isArray(data)) {
+      // turn an array into a DataSet
+      return new DataSet(data, {
+        type: {
+          start: 'Date',
+          end: 'Date'
+        }
+      });
+    }
+    else {
+      return data
+    }
   };
 
   /**
    * Calculate the data range of the items start and end dates
    * @returns {{min: Date | null, max: Date | null}}
    */
-  TimeBlocks.prototype.getDataRange = Timeline.prototype.getDataRange;
+  TimeBlocks.prototype.getDataRange = function() {
+    var min = null;
+    var max = null;
 
+    var dataset = this.blockGraph.itemsData && this.blockGraph.itemsData.getDataSet();
+    if (dataset) {
+      dataset.forEach(function (item) {
+        var start = util.convert(item.start, 'Date').valueOf();
+        var end   = util.convert(item.end != undefined ? item.end : item.start, 'Date').valueOf();
+        if (min === null || start < min) {
+          min = start;
+        }
+        if (max === null || end > max) {
+          max = end;
+        }
+      });
+    }
+
+    return {
+      min: min != null ? new Date(min) : null,
+      max: max != null ? new Date(max) : null
+    }
+  };
 
   /**
    * Generate Timeline related information from an event
@@ -327,10 +333,15 @@ var TimeBlocks = (function () {
     }
     var y = clientY - util.getAbsoluteTop(this.dom.centerContainer);
     var time = this._toTime(x);
-    var yValue = this.blockGraph.scale.screenToValue(y);
 
-    var item  = this.blockGraph.itemFromTarget(event);
-    var label = this.blockGraph.labelFromTarget(event);
+    // FIXME: get the clicked BlockGraph and return yValue of that
+    var groupIndex = 0;
+    var blockGraph = this.blockGraphs[groupIndex];
+
+    var yValue = blockGraph.scale.screenToValue(y);
+
+    var item  = blockGraph.itemFromTarget(event);
+    var label = blockGraph.labelFromTarget(event);
     var customTime = CustomTime.customTimeFromTarget(event);
 
     var element = util.getTarget(event);
@@ -345,15 +356,16 @@ var TimeBlocks = (function () {
 
     return {
       event: event,
-      item: item ? item[this.itemsData._fieldId] : null,
-      label: label ? label[this.labelsData._fieldId] : null,
+      item: item ? item[blockGraph.itemsData._fieldId] : null,
+      label: label ? label[blockGraph.labelsData._fieldId] : null,
       what: what,
       pageX: event.srcEvent ? event.srcEvent.pageX : event.pageX,
       pageY: event.srcEvent ? event.srcEvent.pageY : event.pageY,
       x: x,
       y: y,
       time: time,
-      yValue: yValue
+      yValue: yValue,
+      groupIndex: groupIndex
     }
   };
 
@@ -365,6 +377,7 @@ var TimeBlocks = (function () {
    * @param {Boolean} [horizontal] Whether to focus horizontally
    */
   TimeBlocks.prototype.focus = function(id, vertical, horizontal) {
+    // FIXME: fix .focus()
     if (!this.itemsData || id == undefined) return;
     if (vertical == undefined) vertical = true;
     if (horizontal == undefined) horizontal = true;
@@ -416,6 +429,7 @@ var TimeBlocks = (function () {
    * @param {number} y
    */
   TimeBlocks.prototype.moveToVertically = function (y) {
+    // FIXME: fix moveToVertically
     var yScreen = this.blockGraph.scale.valueToScreen(y);
     var windowHeight = this.body.domProps.centerContainer.height;
     var scrollTop = yScreen - windowHeight / 2;
