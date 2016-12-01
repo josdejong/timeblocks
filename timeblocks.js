@@ -87,11 +87,14 @@ var TimeBlocks = (function () {
    * @extends Core
    */
   function TimeBlocks (container, items, labels, options) {
-    // if the third element is options, the forth is groups (optionally);
-    if (!(Array.isArray(labels) || labels instanceof DataSet || labels instanceof DataView) && labels instanceof Object) {
-      var forthArgument = options;
+    if (arguments.length === 3) {
       options = labels;
-      labels = forthArgument;
+      labels = null;
+    }
+    if (arguments.length === 2) {
+      options = items;
+      items = null;
+      labels = null;
     }
 
     var me = this;
@@ -117,6 +120,7 @@ var TimeBlocks = (function () {
       yMax: null
     };
     this.options = util.deepExtend({}, this.defaultOptions);
+    this.allOptions = options || {};
 
     // Create the DOM, props, and emitter
     this._create(container);
@@ -154,11 +158,12 @@ var TimeBlocks = (function () {
     this.currentTime = new CurrentTime(this.body);
     this.components.push(this.currentTime);
 
-    // // item set
-    this.blockGraph = new TimeBlocks.BlockGraph(this.body, options || {});
-    this.components.push(this.blockGraph);
+    // will contain 1 or multiple block graphs
+    this.blockGraphs = [];
 
-    this.initialLoad = true;
+    this._windowInitialized = false;
+    this._itemsDataSetCount = 0;
+    this._labelsDataSetCount = 0;
 
     this.on('tap', function (event) {
       me.emit('click', me.getEventProperties(event))
@@ -208,10 +213,10 @@ var TimeBlocks = (function () {
   TimeBlocks.prototype.setOptions = function (options) {
     // TODO: validate options
 
-    var yScale = this.blockGraph.options.yScale;
-    var yScaleChanged = typeof options.yScale !== 'undefined' && yScale !== options.yScale;
-    var scrollTop = this.props.scrollTop;
-    var height = this.body.domProps.centerContainer.height;
+    // var yScale = this.blockGraph.options.yScale;
+    // var yScaleChanged = typeof options.yScale !== 'undefined' && yScale !== options.yScale;
+    // var scrollTop = this.props.scrollTop;
+    // var height = this.body.domProps.centerContainer.height;
     // var middle = this.blockGraph.scale.screenToValue(height / 2 - scrollTop);
 
     Core.prototype.setOptions.call(this, options);
@@ -234,24 +239,67 @@ var TimeBlocks = (function () {
   };
 
   /**
-   * Set items
+   * Create BlockGraphs to fit the max number of item sets and
+   * label sets, remove redundant BlockGraphs.
+   * @private
+   */
+  TimeBlocks.prototype._ensureBlockGraphs = function () {
+    var blockGraph;
+    var count = Math.max(this._itemsDataSetCount, this._labelsDataSetCount);
+
+    while (this.blockGraphs.length < count) {
+      blockGraph = new TimeBlocks.BlockGraph(this.body, this.allOptions);
+      this.blockGraphs.push(blockGraph);
+      this.components.push(blockGraph);
+    }
+
+    while (this.blockGraphs.length > count) {
+      blockGraph = this.blockGraphs.pop();
+      blockGraph.destroy();
+      var index = this.components.indexOf(blockGraph);
+      if (index !== -1) {
+        this.components.splice(index, 1);
+      }
+    }
+  };
+
+  /**
+   * Set an itemset
    * @param {vis.DataSet | Array | null} items
    */
   TimeBlocks.prototype.setItems = function(items) {
-    // set items
-    this.blockGraph.setItems(this._toDataSet(items));
+    // create blockGraphs if needed
+    this._itemsDataSetCount = 1;
+    this._ensureBlockGraphs();
 
-    if (items && this.initialLoad) {
-      this.initialLoad = false;
+    this.blockGraphs[0].setItems(this._toDataSet(items));
 
-      if (this.options.start != undefined || this.options.end != undefined) {
-        var start = this.options.start != undefined ? this.options.start : null;
-        var end   = this.options.end != undefined   ? this.options.end : null;
-        this.setWindow(start, end, {animation: false});
-      }
-      else {
-        this.fit({animation: false});
-      }
+    if (items && !this._windowInitialized) {
+      this._windowInitialized = true;
+      this._initWindow();
+    }
+    else {
+      // TODO: redraw when needed
+    }
+  };
+
+  /**
+   * Set multiple itemsets
+   * @param {Array.<vis.DataSet | Array | null>} multiItems
+   */
+  TimeBlocks.prototype.setItemsMulti = function(multiItems) {
+    // create blockGraphs if needed
+    this._itemsDataSetCount = multiItems.length;
+    this._ensureBlockGraphs();
+
+    var me = this;
+    multiItems.forEach(function (items, index) {
+      me.blockGraphs[index].setItems(me._toDataSet(items));
+    });
+
+    if (multiItems.length && !this._windowInitialized) {
+      this._windowInitialized = true;
+      this._initWindow();
     }
     else {
       // TODO: redraw when needed
@@ -263,7 +311,28 @@ var TimeBlocks = (function () {
    * @param {vis.DataSet | Array} labels
    */
   TimeBlocks.prototype.setLabels = function(labels) {
-    this.blockGraph.setLabels(this._toDataSet(labels));
+    // create blockGraphs if needed
+    this._labelsDataSetCount = 1;
+    this._ensureBlockGraphs();
+
+    this.blockGraphs[0].setLabels(this._toDataSet(labels));
+
+    // TODO: redraw when needed
+  };
+
+  /**
+   * Set labels displayed on the vertical axis
+   * @param {Array.<vis.DataSet | Array | null>} multiLabels
+   */
+  TimeBlocks.prototype.setLabelsMulti = function(multiLabels) {
+    // create blockGraphs if needed
+    this._labelsDataSetCount = 1;
+    this._ensureBlockGraphs();
+
+    var me = this;
+    multiLabels.forEach(function (labels, index) {
+      me.blockGraphs[index].setLabels(me._toDataSet(labels));
+    });
 
     // TODO: redraw when needed
   };
@@ -290,6 +359,21 @@ var TimeBlocks = (function () {
   };
 
   /**
+   * Initialize the start and end of the window
+   * @private
+   */
+  TimeBlocks.prototype._initWindow = function () {
+    if (this.options.start != undefined || this.options.end != undefined) {
+      var start = this.options.start != undefined ? this.options.start : null;
+      var end   = this.options.end != undefined   ? this.options.end : null;
+      this.setWindow(start, end, {animation: false});
+    }
+    else {
+      this.fit({animation: false});
+    }
+  };
+
+  /**
    * Calculate the data range of the items start and end dates
    * @returns {{min: Date | null, max: Date | null}}
    */
@@ -297,19 +381,21 @@ var TimeBlocks = (function () {
     var min = null;
     var max = null;
 
-    var dataset = this.blockGraph.itemsData && this.blockGraph.itemsData.getDataSet();
-    if (dataset) {
-      dataset.forEach(function (item) {
-        var start = util.convert(item.start, 'Date').valueOf();
-        var end   = util.convert(item.end != undefined ? item.end : item.start, 'Date').valueOf();
-        if (min === null || start < min) {
-          min = start;
-        }
-        if (max === null || end > max) {
-          max = end;
-        }
-      });
-    }
+    this.blockGraphs.forEach(function (blockGraph) {
+      var dataset = blockGraph.itemsData && blockGraph.itemsData.getDataSet();
+      if (dataset) {
+        dataset.forEach(function (item) {
+          var start = util.convert(item.start, 'Date').valueOf();
+          var end = util.convert(item.end != undefined ? item.end : item.start, 'Date').valueOf();
+          if (min === null || start < min) {
+            min = start;
+          }
+          if (max === null || end > max) {
+            max = end;
+          }
+        });
+      }
+    });
 
     return {
       min: min != null ? new Date(min) : null,
@@ -548,6 +634,21 @@ var TimeBlocks = (function () {
 
     this.dom.labelsContainer = document.createElement('div');
     this.dom.labelsContainer.className = 'timeblocks-labels';
+    this.dom.verticalAxis.appendChild(this.dom.labelsContainer);
+  };
+
+  BlockGraph.prototype.destroy = function () {
+    // detach from DataSets
+    this.setItems(null);
+    this.setLabels(null);
+
+    // detach from DOM
+    if (this.dom.verticalAxis.parentNode) {
+      this.dom.verticalAxis.parentNode.removeChild(this.dom.verticalAxis)
+    }
+    if (this.dom.itemsContainer.parentNode) {
+      this.dom.itemsContainer.parentNode.removeChild(this.dom.itemsContainer)
+    }
   };
 
   BlockGraph.prototype.redraw = function () {
@@ -567,7 +668,7 @@ var TimeBlocks = (function () {
     });
 
     this.dom.itemsContainer.style.height = this.props.height + 'px';
-    this.dom.labelsContainer.style.height = this.props.height + 'px';
+    this.dom.verticalAxis.style.height = this.props.height + 'px';
 
     var axisResized = this._redrawAxis();
 
@@ -588,9 +689,6 @@ var TimeBlocks = (function () {
     // attach to DOM
     if (!this.dom.verticalAxis.parentNode) {
       this.body.dom.left.appendChild(this.dom.verticalAxis)
-    }
-    if (!this.dom.labelsContainer.parentNode) {
-      this.dom.verticalAxis.appendChild(this.dom.labelsContainer)
     }
 
     // remove all old values
@@ -779,7 +877,6 @@ var TimeBlocks = (function () {
 
     return false; // size of contents never changes
   };
-
 
   /**
    * Stringify the items contents

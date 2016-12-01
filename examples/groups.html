@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-  <title>TimeBlocks | Basic demo</title>
+  <title>TimeBlocks | Multiple item sets</title>
 
   <style type="text/css">
     body, html {
@@ -24,7 +24,7 @@
 <body>
 
 <p>
-  A basic TimeBlocks visualization.
+  Render multiple item- and label sets.
 </p>
 
 <div id="visualization"></div>
@@ -34,7 +34,7 @@
   var container = document.getElementById('visualization');
 
   // Create a DataSet (allows two way data-binding)
-  var items = new vis.DataSet([
+  var items1 = new vis.DataSet([
     {
       id: 1,
       yMin: 2,
@@ -73,7 +73,7 @@
     }
   ]);
 
-  var labels = new vis.DataSet([
+  var labels1 = new vis.DataSet([
     {
       id: 1,
       yMin: 4,
@@ -90,19 +90,43 @@
     }
   ]);
 
+  var items2 = new vis.DataSet([
+    {
+      id: 5,
+      yMin: 2,
+      yMax: 14,
+      content: 'item 5 (2-14)',
+      title: 'item 5 (2-14)',
+      start: '2016-04-19',
+      end: '2016-05-01'
+    }
+  ]);
+
+  var labels2 = new vis.DataSet([
+    {
+      id: 3,
+      yMin: 6,
+      yMax: 12,
+      content: 'Third label',
+      title: 'Third label'
+    }
+  ]);
+
   // Configuration for the TimeBlocks
   var options = {
 //    start: '2016-04-10',
 //    end: '2016-04-29',
 //    yMin: 0,
 //    yMax: 16,
-//    autoResize: false
     yScale: 25,
-//    height: '100%'
+    autoResize: false,
+    height: '100%'
   };
 
   // Create a TimeBlocks
-  var timeblocks = new TimeBlocks(container, items, labels, options);
+  var timeblocks = new TimeBlocks(container, options);
+  timeblocks.setItemsMulti([items1, items2]);
+  timeblocks.setLabelsMulti([labels1, labels2]);
 </script>
 </body>
 </html>
