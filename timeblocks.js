@@ -217,10 +217,11 @@ var TimeBlocks = (function () {
       var newHeight = this._calculateContentsHeight();
       var newMiddle = (oldMiddle / oldHeight) * newHeight;
 
-      // console.log('update scrollTop', oldHeight, newHeight, oldMiddle, newMiddle);
       this._redraw();
       this._setScrollTop(-(newMiddle - windowHeight / 2));
       // TODO: if scrollTop was 0, adjust?
+
+      // FIXME: the new yScale is only applied on a _redraw in the next tick.
     }
   };
 
