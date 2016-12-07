@@ -116,7 +116,7 @@ var TimeBlocks = (function () {
       yMax: null
     };
     this.options = util.deepExtend({}, this.defaultOptions);
-    this.allOptions = options || {};
+    this.allOptions = options ? util.extend({}, options) : {};
 
     // Create the DOM, props, and emitter
     this._create(container);
@@ -214,14 +214,28 @@ var TimeBlocks = (function () {
     Core.prototype.setOptions.call(this, options);
 
     if (yScaleChanged && oldHeight > 0) {
-      var newHeight = this._calculateContentsHeight();
-      var newMiddle = (oldMiddle / oldHeight) * newHeight;
+      var me = this;
+      function adjustScrollTop () {
+        var newHeight = me._calculateContentsHeight();
+        var newMiddle = (oldMiddle / oldHeight) * newHeight;
+
+        me._setScrollTop(-(newMiddle - windowHeight / 2));
+        me._redraw();
+      }
 
       this._redraw();
-      this._setScrollTop(-(newMiddle - windowHeight / 2));
-      // TODO: if scrollTop was 0, adjust?
 
-      // FIXME: the new yScale is only applied on a _redraw in the next tick.
+      var newHeight = this._calculateContentsHeight();
+      if (newHeight !== oldHeight) {
+        // apply immediately
+        adjustScrollTop()
+      }
+      else {
+        // update on next tick, after the UI is redrawn (needed for Angular)
+        // FIXME: the new yScale is only applied on a _redraw in the next tick
+        setTimeout(adjustScrollTop, 0)
+      }
+
     }
   };
 
@@ -961,6 +975,9 @@ var TimeBlocks = (function () {
     else if (items instanceof DataSet || items instanceof DataView) {
       this.itemsData = items;
     }
+    else if (Array.isArray(items)) {
+      this.itemsData = new DataSet(items);
+    }
     else {
       throw new TypeError('Items must be an instance of DataSet or DataView');
     }
@@ -987,6 +1004,9 @@ var TimeBlocks = (function () {
     }
     else if (labels instanceof DataSet || labels instanceof DataView) {
       this.labelsData = labels;
+    }
+    else if (Array.isArray(labels)) {
+      this.labelsData = new DataSet(labels);
     }
     else {
       throw new TypeError('Labels must be an instance of DataSet or DataView');
