@@ -32,7 +32,7 @@ var TimeBlocks = (function () {
     this.end = end || 0;
     this.containerHeight = containerHeight;
 
-    this.margin = options && typeof options.margin === 'number' ? options.margin: 16;
+    this.margin = options && typeof options.margin === 'number' ? options.margin : 16;
     var range = this.end - this.start;
     this.scale = (this.containerHeight - 2 * this.margin) / range;
     this.step = 1;
@@ -359,14 +359,21 @@ var TimeBlocks = (function () {
     var y = clientY - util.getAbsoluteTop(this.dom.centerContainer);
     var time = this._toTime(x);
 
-    // FIXME: get the clicked BlockGraph and return yValue of that
-    var groupIndex = 0;
-    var blockGraph = this.blockGraphs[groupIndex];
+    var blockGraph = TimeBlocks.BlockGraph.blockGraphFromTarget(event);
+    var graphIndex = blockGraph ? this.blockGraphs.indexOf(blockGraph) : null;
 
-    var yValue = blockGraph.scale.screenToValue(y);
+    var yValue = null;
+    var item  = null;
+    var label = null;
+    if (blockGraph) {
+      var elem = blockGraph.dom.itemsContainer;
+      var offset = elem.getBoundingClientRect().top - elem.parentNode.getBoundingClientRect().top + this.body.domProps.scrollTop;
 
-    var item  = blockGraph.itemFromTarget(event);
-    var label = blockGraph.labelFromTarget(event);
+      yValue = blockGraph.scale.screenToValue(y - offset);
+      item = blockGraph.itemFromTarget(event);
+      label = blockGraph.labelFromTarget(event);
+    }
+
     var customTime = CustomTime.customTimeFromTarget(event);
 
     var element = util.getTarget(event);
@@ -375,6 +382,7 @@ var TimeBlocks = (function () {
     else if (label != null)                                              {what = 'label';}
     else if (customTime != null)                                         {what = 'custom-time';}
     else if (util.hasParent(element, this.timeAxis.dom.foreground))      {what = 'axis';}
+    else if (util.hasParent(element, this.dom.left))                     {what = 'y-axis';}
     else if (this.timeAxis2 && util.hasParent(element, this.timeAxis2.dom.foreground)) {what = 'axis';}
     else if (util.hasParent(element, this.currentTime.bar))              {what = 'current-time';}
     else if (util.hasParent(element, this.dom.center))                   {what = 'background';}
@@ -390,7 +398,7 @@ var TimeBlocks = (function () {
       y: y,
       time: time,
       yValue: yValue,
-      groupIndex: groupIndex
+      graphIndex: graphIndex
     }
   };
 
@@ -514,7 +522,7 @@ var TimeBlocks = (function () {
       yMax: null
     };
 
-    this.scale = new TimeBlocks.DataScale(0, 0, 0);
+    this.scale = new TimeBlocks.DataScale(0, 0, 0, options);
 
     // the _update method is called when anything in the DataSets changes
     var me = this;
@@ -531,7 +539,7 @@ var TimeBlocks = (function () {
   }
 
   BlockGraph.prototype.setOptions = function (options) {
-    var fields = ['yMin', 'yMax', 'yScale', 'onRenderItem', 'onRenderLabel'];
+    var fields = ['yMin', 'yMax', 'yScale', 'onRenderItem', 'onRenderLabel', 'margin'];
     util.selectiveExtend(fields, this.options, options);
 
     this._updateMinMax();
@@ -586,13 +594,32 @@ var TimeBlocks = (function () {
   BlockGraph.prototype._create = function () {
     this.dom.verticalAxis = document.createElement('div');
     this.dom.verticalAxis.className = 'timeblocks-vertical-axis';
+    this.dom.verticalAxis['block-graph'] = this;
 
     this.dom.itemsContainer = document.createElement('div');
     this.dom.itemsContainer.className = 'timeblocks-items';
+    this.dom.itemsContainer['block-graph'] = this;
 
     this.dom.labelsContainer = document.createElement('div');
     this.dom.labelsContainer.className = 'timeblocks-labels';
     this.dom.verticalAxis.appendChild(this.dom.labelsContainer);
+  };
+
+  /**
+   * Find a BlockGraph from an event
+   * @param {Event} event
+   * @returns {BlockGraph | null}
+   */
+  BlockGraph.blockGraphFromTarget = function (event) {
+    var target = event.target;
+    while (target) {
+      if (target.hasOwnProperty('block-graph')) {
+        return target['block-graph'];
+      }
+      target = target.parentNode;
+    }
+
+    return null;
   };
 
   BlockGraph.prototype.destroy = function () {
@@ -620,11 +647,12 @@ var TimeBlocks = (function () {
     }
     var contentsResized = this.props.height !== oldHeight;
 
-    this.scale = new TimeBlocks.DataScale(this.props.yMin, this.props.yMax, this.props.height, {
+    var scaleOptions = util.extend({}, this.options, {
       isMajor: function (value) {
         return value % 5 === 0
       }
     });
+    this.scale = new TimeBlocks.DataScale(this.props.yMin, this.props.yMax, this.props.height, scaleOptions);
 
     this.dom.itemsContainer.style.height = this.props.height + 'px';
     this.dom.verticalAxis.style.height = this.props.height + 'px';

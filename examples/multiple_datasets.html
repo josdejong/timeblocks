@@ -115,7 +115,8 @@
 //    yMin: 0,
 //    yMax: 16,
     yScale: 25,
-    height: '400px'
+    height: '400px',
+    margin: 10
   };
 
   // Create a TimeBlocks
@@ -130,6 +131,11 @@
     }
   ];
   var timeblocks = new TimeBlocks(container, data, options);
+
+  timeblocks.on('click', function (event) {
+    console.log('click', event, event.yValue);
+  });
+
 </script>
 </body>
 </html>
