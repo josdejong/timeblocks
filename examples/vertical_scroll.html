@@ -7,14 +7,10 @@
     body, html {
       font-family: sans-serif;
     }
-
-    #visualization {
-      height: 400px;
-    }
   </style>
 
   <!-- load vis.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.css" rel="stylesheet" type="text/css" />
 
   <!-- load timeblocks -->
@@ -96,8 +92,9 @@
 
   // Configuration for the TimeBlocks
   var options = {
-    height: '100%',
+    height: '400px',
     orientation: 'top',
+    autoResize: false,
     yScale: 10     // 10 pixels per unit on the vertical axis
   };
 

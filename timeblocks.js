@@ -108,7 +108,7 @@ var TimeBlocks = (function () {
       moment: moment,
 
       width: null,
-      height: null,
+      height: '300px',
       maxHeight: null,
       minHeight: null,
 
@@ -202,29 +202,37 @@ var TimeBlocks = (function () {
   TimeBlocks.prototype.setOptions = function (options) {
     // TODO: validate options
 
-    // var yScale = this.blockGraph.options.yScale;
-    // var yScaleChanged = typeof options.yScale !== 'undefined' && yScale !== options.yScale;
-    // var scrollTop = this.props.scrollTop;
-    // var height = this.body.domProps.centerContainer.height;
-    // var middle = this.blockGraph.scale.screenToValue(height / 2 - scrollTop);
+    var yScale = this.allOptions.yScale;
+    var yScaleChanged = typeof options.yScale !== 'undefined' && yScale !== options.yScale;
+    var scrollTop = this.props.scrollTop;
+    var windowHeight = this.body.domProps.centerContainer.height;
+    var oldHeight = this._calculateContentsHeight();
+    var oldMiddle = windowHeight / 2 - scrollTop; // note that scrollTop is negative
+
+    util.extend(this.allOptions, options);
 
     Core.prototype.setOptions.call(this, options);
 
-    // FIXME: adjust scrollTop when yScaleChanged
-    // if (yScaleChanged) {
-    //   // prevent screen from jumping vertically to some new position
-    //   // by adjusting the scrollTop and scrollTopMin
-    //   var yScreen = this.blockGraph.scale.valueToScreen(middle);
-    //   var windowHeight = this.body.domProps.centerContainer.height;
-    //   var newScrollTop = windowHeight / 2 - yScreen;
-    //
-    //   //var diff = this.dom.center.clientHeight - this.props.center.height;
-    //   var diff = (options.yScale / yScale - 1) * this.props.center.height;
-    //   this.props.scrollTop = newScrollTop;
-    //   this.props.scrollTopMin -= diff;
-    //
-    //   this._redraw();
-    // }
+    if (yScaleChanged && oldHeight > 0) {
+      var newHeight = this._calculateContentsHeight();
+      var newMiddle = (oldMiddle / oldHeight) * newHeight;
+
+      // console.log('update scrollTop', oldHeight, newHeight, oldMiddle, newMiddle);
+      this._redraw();
+      this._setScrollTop(-(newMiddle - windowHeight / 2));
+      // TODO: if scrollTop was 0, adjust?
+    }
+  };
+
+  /**
+   * Calculate the total height of all blockGraphs
+   * @returns {number}
+   * @private
+   */
+  TimeBlocks.prototype._calculateContentsHeight = function () {
+    return this.blockGraphs.reduce(function (total, blockGraph) {
+      return total + blockGraph.props.height;
+    }, 0);
   };
 
   /**
@@ -250,6 +258,10 @@ var TimeBlocks = (function () {
         this.components.splice(index, 1);
       }
     }
+
+    this.blockGraphs.forEach(function (blockGraph) {
+      blockGraph.setBlockGraphCount(count)
+    })
   };
 
   /**
@@ -405,8 +417,8 @@ var TimeBlocks = (function () {
         var offset = this.body.dom.center.getBoundingClientRect().top;
         var y = (rect.top + rect.bottom) / 2 - offset;
         var windowHeight = this.body.domProps.centerContainer.height;
-        var scrollTop = (y - windowHeight / 2);
-        this._setScrollTop(-scrollTop);
+        var scrollTop = -(y - windowHeight / 2);
+        this._setScrollTop(scrollTop);
       }
 
       if (horizontal) {
@@ -497,6 +509,7 @@ var TimeBlocks = (function () {
       valueWidth: 0,
       labelsWidth: null,
       charHeight: 24,
+      blockGraphCount: 1,
       yMin: null,
       yMax: null
     };
@@ -522,6 +535,16 @@ var TimeBlocks = (function () {
     util.selectiveExtend(fields, this.options, options);
 
     this._updateMinMax();
+  };
+
+  /**
+   * Set the total number of block graphs.
+   * This number is used by the BlockGraph to auto size itself
+   * when there is no yScale set.
+   * @param {number} blockGraphCount
+   */
+  BlockGraph.prototype.setBlockGraphCount = function (blockGraphCount) {
+    this.props.blockGraphCount = blockGraphCount;
   };
 
   BlockGraph.prototype._updateMinMax = function () {
@@ -586,14 +609,16 @@ var TimeBlocks = (function () {
   };
 
   BlockGraph.prototype.redraw = function () {
+    var oldHeight = this.props.height;
     if (this.options.yScale) {
       const yDiff = this.props.yMax - this.props.yMin;
       this.props.height = yDiff * this.options.yScale;
     }
     else {
       // fit the surrounding box
-      this.props.height = this.body.domProps.centerContainer.height;
+      this.props.height = this.body.domProps.centerContainer.height / this.props.blockGraphCount - 2;
     }
+    var contentsResized = this.props.height !== oldHeight;
 
     this.scale = new TimeBlocks.DataScale(this.props.yMin, this.props.yMax, this.props.height, {
       isMajor: function (value) {
@@ -608,7 +633,7 @@ var TimeBlocks = (function () {
 
     var itemsResized = this._redrawItems();
 
-    return axisResized || itemsResized;
+    return contentsResized || axisResized || itemsResized;
   };
 
   BlockGraph.prototype._redrawAxis = function () {
