@@ -575,6 +575,8 @@ var TimeBlocks = (function () {
       this.props.yMin = this.options.yMin
     }
     else {
+      this.props.yMin = null;
+
       var minItem = this.itemsData && this.itemsData.min('yMin');
       if (minItem) {
         this.props.yMin = minItem.yMin;
@@ -582,9 +584,9 @@ var TimeBlocks = (function () {
 
       var minLabel = this.labelsData && this.labelsData.min('yMin');
       if (minLabel) {
-        this.props.yMin = this.props.yMin == null
-            ? minLabel.yMin
-            : Math.min(this.props.yMin, minLabel.yMin)
+        this.props.yMin = this.props.yMin != null
+            ? Math.min(this.props.yMin, minLabel.yMin)
+            : minLabel.yMin
       }
     }
 
@@ -592,6 +594,8 @@ var TimeBlocks = (function () {
       this.props.yMax = this.options.yMax
     }
     else {
+      this.props.yMax = null;
+
       var maxItem = this.itemsData && this.itemsData.max('yMax');
       if (maxItem) {
         this.props.yMax = maxItem.yMax;
@@ -599,9 +603,9 @@ var TimeBlocks = (function () {
 
       var maxLabel = this.labelsData && this.labelsData.max('yMax');
       if (maxLabel) {
-        this.props.yMax = this.props.yMax == null
-            ? maxLabel.yMax
-            : Math.max(this.props.yMax, maxLabel.yMax)
+        this.props.yMax = this.props.yMax != null
+            ? Math.max(this.props.yMax, maxLabel.yMax)
+            : maxLabel.yMax
       }
     }
   };
