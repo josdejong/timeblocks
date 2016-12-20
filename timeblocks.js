@@ -687,7 +687,7 @@ var TimeBlocks = (function () {
     var resized = false;
     var charHeight = this.props.charHeight;
     var gridWidth = 20; // TODO: make customizable
-    var props = this.props;
+    var gridMargin = 5; // TODO: make customizable
     var dom = this.dom;
 
     var labels = this.scale.getLabels();
@@ -707,7 +707,7 @@ var TimeBlocks = (function () {
       var grid = document.createElement('div');
       grid.className = 'timeblocks-grid-line ' + (label.isMajor ? 'vis-major' : 'vis-minor');
       grid.style.top = label.y + 'px';
-      grid.style.right = props.valueWidth + 'px';
+      grid.style.right = gridMargin + 'px';
       grid.style.width = (label.isMajor ? gridWidth : gridWidth / 2) + 'px';
       grid.style.position = 'absolute';
 
@@ -719,7 +719,7 @@ var TimeBlocks = (function () {
         value.className = 'timeblocks-grid-value ' + (label.isMajor ? 'vis-major' : 'vis-minor');
         value.appendChild(document.createTextNode(label.text));
         value.style.top = (label.y - charHeight / 2 + 1) + 'px';
-        value.style.right = '0';
+        value.style.right = (gridWidth + gridMargin) + 'px';
         value.style.position = 'absolute';
         value.style.boxSizing = 'border-box';
 
@@ -779,7 +779,7 @@ var TimeBlocks = (function () {
     this.props.valueWidth = valueWidth;
 
     // var gridWidth = dom.grid[0] && dom.grid[0].clientWidth || 0;
-    var width = valueWidth + gridWidth + labelsWidth;
+    var width = valueWidth + gridWidth + 2 * gridMargin + labelsWidth;
     resized = resized || (this.props.width !== width);
     this.props.width = width;
 
