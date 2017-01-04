@@ -11,8 +11,9 @@ var TimeBlocks = (function () {
 
   /**
    * @typedef {{
-   * items: vis.DataSet | vis.DataView | null,
-   * labels: vis.DataSet | vis.DataView | null
+   *   items: vis.DataSet | vis.DataView | null,
+   *   labels: vis.DataSet | vis.DataView | null,
+   *   className?: string
    * }} TimeBlocksData
    */
 
@@ -436,12 +437,15 @@ var TimeBlocks = (function () {
       if (vertical) {
         // calculate vertical position for the scroll top
         var element = this._findDOM(id);
-        var rect = element.getBoundingClientRect();
-        var offset = this.body.dom.center.getBoundingClientRect().top;
-        var y = (rect.top + rect.bottom) / 2 - offset;
-        var windowHeight = this.body.domProps.centerContainer.height;
-        var scrollTop = -(y - windowHeight / 2);
-        this._setScrollTop(scrollTop);
+
+        if (element) {
+          var rect = element.getBoundingClientRect();
+          var offset = this.body.dom.center.getBoundingClientRect().top;
+          var y = (rect.top + rect.bottom) / 2 - offset;
+          var windowHeight = this.body.domProps.centerContainer.height;
+          var scrollTop = -(y - windowHeight / 2);
+          this._setScrollTop(scrollTop);
+        }
       }
 
       if (horizontal) {
@@ -675,6 +679,9 @@ var TimeBlocks = (function () {
 
     this.dom.itemsContainer.style.height = this.props.height + 'px';
     this.dom.verticalAxis.style.height = this.props.height + 'px';
+
+    this.dom.verticalAxis.className = 'timeblocks-vertical-axis ' + this._className;
+    this.dom.itemsContainer.className = 'timeblocks-items ' + this._className;
 
     var axisResized = this._redrawAxis();
 
@@ -959,6 +966,7 @@ var TimeBlocks = (function () {
 
     this._setItems(data && data.items || null);
     this._setLabels(data && data.labels || null);
+    this._className = data && data.className || ''
   };
 
   BlockGraph.prototype._setItems = function (items) {

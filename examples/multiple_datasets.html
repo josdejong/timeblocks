@@ -3,12 +3,6 @@
 <head>
   <title>TimeBlocks | Multiple item sets</title>
 
-  <style type="text/css">
-    body, html {
-      font-family: sans-serif;
-    }
-  </style>
-
   <!-- load vis.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.css" rel="stylesheet" type="text/css" />
@@ -16,6 +10,23 @@
   <!-- load timeblocks -->
   <script src="../timeblocks.js"></script>
   <link href="../timeblocks.css" rel="stylesheet" type="text/css" />
+
+  <style type="text/css">
+    body, html {
+      font-family: sans-serif;
+    }
+
+    .dataset1 {
+      background: rgba(255, 255, 0, 0.15);  /* light yellow */
+    }
+    .dataset2 {
+      background: rgba(255, 44, 0, 0.15); /* light pink */
+    }
+    .timeblocks-item {
+      background: white;
+    }
+  </style>
+
 </head>
 <body>
 
@@ -123,11 +134,13 @@
   var data = [
     {
       items: items1,
-      labels: labels1
+      labels: labels1,
+      className: 'dataset1'
     },
     {
       items: items2,
-      labels: labels2
+      labels: labels2,
+      className: 'dataset2'
     }
   ];
   var timeblocks = new TimeBlocks(container, data, options);
