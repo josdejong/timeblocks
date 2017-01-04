@@ -283,7 +283,7 @@ var TimeBlocks = (function () {
   /**
    * Set one or multiple data sets.
    * Each data set is an object with properties `items` and `labels`.
-   * @param {TimeBlocksData | TimeBlocksData[] | null} data
+   * @param {TimeBlocksData | TimeBlocksData[] | null} [data]
    */
   TimeBlocks.prototype.setData = function(data) {
     if (Array.isArray(data)) {
@@ -311,6 +311,13 @@ var TimeBlocks = (function () {
     else {
       this._redraw();
     }
+  };
+
+  /**
+   * Clear all data
+   */
+  TimeBlocks.prototype.clear = function () {
+    this.setData()
   };
 
   /**
